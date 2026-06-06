@@ -1,4 +1,4 @@
-\documentclass[journal=make,article,submit,oneauthor,pdftex]{Definitions/mdpi}
+\documentclass[make,article,submit,oneauthor,pdftex]{Definitions/mdpi}
 
 % Extra packages on top of those preloaded by mdpi.cls
 \usepackage{algorithm}
@@ -28,9 +28,9 @@
 % =============================================================
 % Title, author, affiliation, abstract, keywords
 % =============================================================
-\Title{Position-Aware Chunking for Industrial
-Standard-Operating-Procedure Automation: Preserving Step Granularity
-and Preconditions in LLM-Extracted Workflows}
+\Title{Step-Count Fidelity Exposes an Over-Segmentation Pathology in
+LLM Pipelines for Industrial Standard-Operating-Procedure Automation:
+An Evaluation Framework and a Cross-Extractor Robustness Check}
 
 \Author{Gourav Singla $^{1,}$*}
 \AuthorNames{Gourav Singla}
@@ -43,34 +43,41 @@ gouravsingla05@gmail.com}
 
 \abstract{Large-language-model pipelines that turn industrial Standard
 Operating Procedures (SOPs) into executable workflows must first chunk
-the source document, but chunking strategies designed for
+the source document, but chunking strategies developed for
 retrieval-augmented question answering treat document order as
-incidental while SOPs invert this assumption: step sequence and
-precondition--step adjacency are load-bearing. This work formalises
-three structural-fidelity properties for chunking procedural text
-(step-order preservation, precondition adjacency, safety-constraint
-attachment), introduces step-count fidelity as the counterpart to
-Kendall's $\tau$ that exposes the over-segmentation pathology under
-which order-only metrics reward chunkers that fragment the source into
-a long noisy step list, and reports a 26-document pilot on public
-US-government SOPs comparing five chunkers (fixed-size, recursive,
-semantic, layout-aware, and a rule-based position-aware chunker, PAC)
-while holding the LLM extractor and prompt constant. Two findings are
-robust across the design: the four widely used baseline chunkers
-over-segment SOPs four- to nine-fold relative to a whole-document
-oracle on both the full corpus and a 20-document procedural-only
-subset, and the chunker ranking is partly extractor-dependent, as
-demonstrated by a cross-extractor robustness check (Gemini~Flash
-versus OpenAI gpt-4o-mini) in which the step-count-fidelity rank
-order changes. PAC is presented as an existence proof that a
-structure-preserving chunker can avoid the over-segmentation pathology
-by construction; PAC leads on step-count fidelity under the
-Gemini-based pilot (uncorrected $p=0.046$ and $0.040$ against the two
-simplest baselines, neither surviving family-wise correction across
-the 24 paired tests run), but the lead does not replicate under
-gpt-4o-mini. The same-model coupling between extractor and oracle is
-named as the deepest remaining confound and a hand-annotated gold
-subset is required to settle the empirical question.}
+incidental, while SOPs invert this assumption. This work makes two
+methodological contributions and reports one applied existence proof.
+The first methodological contribution is an evaluation framework for
+chunking procedural text built around three structural-fidelity
+properties (step-order preservation, precondition adjacency,
+safety-constraint attachment) and step-count fidelity as a complement
+to Kendall's $\tau$; the pairing exposes an \emph{over-segmentation
+pathology} under which order-only metrics reward chunkers that
+fragment the source into a long noisy step list. On a 26-document
+pilot of public US-government SOPs, the four widely used baseline
+chunkers (fixed-size, recursive, semantic, layout-aware) over-segment
+the source four- to nine-fold relative to a whole-document oracle, a
+finding robust across two corpus slices, two extractor model families,
+and a merge-threshold sensitivity sweep. The second methodological
+contribution is a cross-extractor robustness check in which the
+pipeline is re-run with OpenAI gpt-4o-mini in place of Gemini Flash as
+both per-chunk extractor and oracle: the step-count-fidelity rank
+order of the five chunkers changes between extractors, providing
+direct empirical evidence that chunker rankings under LLM-based
+evaluation are partly model-dependent. The applied contribution is a
+transparent rule-based position-aware chunker (PAC) offered as an
+existence proof that a structure-preserving chunker can avoid the
+over-segmentation pathology by construction. Under the Gemini-based
+pilot PAC produces the highest mean step-count fidelity, with two
+uncorrected pairwise $p<0.05$ results that do not survive a
+family-wise correction; this measured advantage is concentrated in
+the 5 Nuclear Regulatory Commission inspection procedures whose
+densely numbered step structure matches PAC's detection regime, does
+not replicate under gpt-4o-mini, and is partly confounded with the
+same-model coupling between extractor and oracle. Settling the
+empirical question requires a hand-annotated gold subset. The corpus
+manifest, both extractor runs, the pipeline, and the reference PAC
+implementation are released.}
 
 \keyword{position-aware chunking; SOP-to-workflow automation; large
 language models; document understanding; safety-critical automation}
@@ -105,15 +112,25 @@ retrieval-augmented generation
 (RAG)\cite{lewis2020rag,karpukhin2020dpr} for question answering, where
 methods are ranked by retrieval relevance and answer faithfulness on
 tasks for which document order is incidental. SOPs are the opposite
-case. Step~7 must run after step~6. A clause such as ``If valve~A is
-closed, skip steps 12--15'' is a hard conditional. ``Wear personal
-protective equipment (PPE) before opening the cabinet'' must travel with
-the cabinet-opening step or the operator may be injured. A chunker that
-scores well on RAG can quietly split a numbered step, separate a
-precondition from its target, or fragment a conditional branch, and the
-generated workflow inherits the corruption silently, indistinguishable
-downstream from a model hallucination\cite{ji2023hallucination} but
-with the same safety consequence.
+case. Step~7 must run after step~6, a clause such as ``If valve~A is
+closed, skip steps 12--15'' is a hard conditional, and a precondition
+clause is only meaningful if it travels with the step it gates. A
+chunker that scores well on RAG can quietly split a numbered step,
+separate a precondition from its target, or fragment a conditional
+branch, and the generated workflow inherits the corruption silently,
+indistinguishable downstream from a model
+hallucination\cite{ji2023hallucination}. SOPs often carry
+safety-critical clauses (personal protective equipment, lockout /
+tagout, isolation, hazard warnings), and any pipeline ultimately
+intended for an operator-facing workflow will need to preserve those
+clauses correctly. This work formalises safety-constraint attachment
+as one of three structural-fidelity properties, but the present pilot
+finds that the constraint-attachment metric is dominated by extractor
+self-inconsistency rather than chunk quality (Results) and is
+therefore not informative at this corpus scale; the safety-critical motivation is
+named for completeness while the empirical results in this paper are
+about step granularity and precondition adjacency, not about
+constraint attachment directly.
 
 Three observations frame the present work. First, the dominant chunking
 strategies (fixed-size token windows, recursive character splitting,
@@ -163,7 +180,7 @@ proposed as an existence proof that a structure-preserving chunker can
 avoid the over-segmentation pathology by construction; PAC leads on
 step-count fidelity under the Gemini-based pilot at uncorrected
 $p=0.046$ and $p=0.040$ against the two simplest baselines, neither of
-which would survive family-wise correction across the 24 paired tests
+which would survive family-wise correction across the 48 paired tests
 run, and the lead does not replicate when the extractor and oracle are
 both switched to OpenAI gpt-4o-mini. Fourth, the cross-extractor
 robustness check itself is reported as evidence that the chunker
@@ -328,12 +345,15 @@ classification), and typed edges. The prompt design is direct rather
 than chain-of-thought, because the target is a structured JSON object
 rather than a reasoning trace\cite{wei2022cot}. The system instruction
 tells the model to emit chunk-local ids and to extract only content
-present in the chunk. An asymmetry between this per-chunk prompt and
-the whole-document oracle prompt is noted: the oracle is instructed
-to be thorough (see ``Oracle ground truth''), so prompt wording alone
-can contribute to a count gap between $\hat{G}(D)$ and $G^{*}(D)$ that
-is not chunker-attributable; this is treated as a confound in the
-Discussion. We use Gemini's free tier for the pilot. The
+present in the chunk---a conservative instruction that suppresses
+inference about content the chunk does not contain. The whole-document
+oracle prompt (Section, ``Oracle ground truth'') instead instructs the
+model to be thorough. The two prompts therefore differ in their
+inference posture (conservative versus thorough), and prompt wording
+alone can contribute to a count gap between $\hat{G}(D)$ and
+$G^{*}(D)$ that is not chunker-attributable; this asymmetry is treated
+as a confound in the Discussion. Gemini's free tier is used for the
+pilot. The
 \texttt{gemini-flash-latest} alias floats by definition, so the
 underlying served checkpoint may change over time; for the headline
 run reported here the API-side model identifier returned with each
@@ -344,13 +364,18 @@ robustness check'') is designed to bound.
 
 The per-chunk graphs are merged into one document-level graph
 $\hat{G}(D)$. Steps that recur across overlapping chunks are
-de-duplicated by embedding similarity (cosine threshold 0.78, higher
-than the metric-alignment threshold because chunk overlap usually
-contains verbatim repeats). Preconditions and constraints are
-de-duplicated similarly. Edges are unioned, with endpoint ids remapped
-to canonical ids and danglers dropped. \texttt{Precedes} edges are
-synthesised from the merged step order so the graph is connected even
-when the per-chunk extractor omitted them.
+de-duplicated by Jaccard similarity on lower-cased word bags at a
+threshold of 0.78, tuned for the verbatim-overlap case at chunk
+boundaries. Note that the merge threshold (Jaccard~0.78) and the
+node-alignment threshold used by the metrics (cosine similarity of
+\texttt{all-MiniLM-L6-v2} embeddings at 0.65) are expressed on
+different scales and are not directly comparable; the merge handles
+near-verbatim overlap, while alignment must tolerate paraphrase.
+Preconditions and constraints are de-duplicated by the same Jaccard
+rule. Edges are unioned, with endpoint ids remapped to canonical ids
+and danglers dropped. \texttt{Precedes} edges are synthesised from the
+merged step order so the graph is connected even when the per-chunk
+extractor omitted them.
 
 \subsection{Corpus}
 
@@ -479,9 +504,14 @@ difference is negated so that a positive $\Delta$ always denotes a PAC
 advantage. Given the exploratory pilot scale, uncorrected $p$-values
 are reported rather than a conservative family-wise correction that
 the sample size cannot support, and this is flagged explicitly when
-interpreting significance. Because 24 paired tests are run across two
-slices and six metrics, the probability of at least one false positive
-at $\alpha = 0.05$ exceeds 0.50 under a strict family-wise null. The
+interpreting significance. The full pilot runs 48 paired tests in
+total (four baselines $\times$ six metrics $\times$ two slices); under
+a strict family-wise null at $\alpha=0.05$ the expected number of
+false positives is~2.4 and the probability of at least one false
+positive exceeds~0.9, so finding two uncorrected $p<0.05$ results is
+consistent with chance, and the headline tests are reported with
+their per-document W/T/L tallies precisely so the reader can weigh
+each one on its own evidence rather than on the $p$-value alone. The
 per-document W/T/L tallies are presented precisely so that the reader
 can assess each comparison on the evidence rather than the $p$-value
 alone; the two significant comparisons (recursive on full, fixed on
@@ -599,8 +629,14 @@ accomplishments summary), a memorandum of understanding between
 regulatory bodies, three administrative policies (administrative
 gifts, sponsorship approvals, general administration), and a
 science-advisory report. These documents were admitted by the corpus
-filter on the basis of language and surface keyword counts but lack
-genuine step structure on inspection.
+filter on the basis of language and surface keyword counts but, on
+inspection, lack genuine step structure. The exclusion judgement was
+made by the author alone and was not validated against a second
+annotator, which at this pilot's scale is a defensible but
+non-mechanical filter; the list of excluded documents is recorded in
+the released corpus manifest so the exclusion is auditable and the
+full-corpus numbers in Table~\ref{tab:headline} make the impact of
+the choice transparent.
 
 Under the Gemini-based pilot, PAC produces the highest per-chunker
 mean for step-count fidelity and precondition recall on both slices
@@ -648,7 +684,7 @@ Corpus & Chunker & count & sprec & $\tau$ & pre & F1 & orph \\
 
 Table~\ref{tab:wilcoxon} gives paired Wilcoxon signed-rank results for
 the two step-count and precondition metrics on which PAC produces the
-highest mean. Two of the 24 paired tests run in the pilot reach
+highest mean. Two of the 48 paired tests run in the pilot reach
 uncorrected $p<0.05$: fixed-size on the procedural subset
 ($p=0.040$, win/tie/loss 12/1/7) and recursive on the full corpus
 ($p=0.046$, 17/0/9). Across two slices and six metrics the
@@ -702,16 +738,21 @@ Metric & Baseline & $\Delta$ & W/T/L & p \\
 
 \subsection{Step-ordering accuracy is preserved}
 
-PAC's advantage on count fidelity and precondition recall does not come
-at the cost of step ordering. On the full corpus, the per-chunker
-Kendall's~$\tau$ means cluster within a narrow band (fixed 0.221,
-recursive 0.255, semantic 0.238, layout 0.161, PAC 0.215). No paired
+The measured count-fidelity advantage does not come at the cost of
+step ordering. On the full 26-document corpus under Gemini Flash, the
+per-chunker Kendall's~$\tau$ means cluster within a narrow band
+(fixed-size 0.221, recursive 0.255, semantic 0.238, layout-aware
+0.161, PAC 0.215), with recursive nominally first. No paired
 comparison between PAC and a baseline on $\tau$ reaches statistical
-significance, and the direction varies (PAC has a slightly higher
-$\tau$ than layout-aware on both slices and slightly lower than
-recursive). Read alongside the count-fidelity result, this means PAC
-matches the baselines' ordering quality on the steps that are
-recovered, while producing a step list whose size matches the source.
+significance on this slice, and the direction varies. The
+cross-extractor robustness check reported in
+Section~\ref{sec:robustness} returns a different $\tau$ ranking on the
+15-document paired slice (fixed-size $>$ PAC $>$ layout-aware $>$
+semantic $>$ recursive on that slice; see Table~\ref{tab:robust}),
+which is itself further evidence that rank orderings on this pilot
+are slice- and extractor-sensitive. Within either slice, PAC's $\tau$
+is in the cluster rather than at the top, but its step list is much
+closer to source granularity than the over-segmenting baselines.
 
 \subsection{Per-stratum heterogeneity}
 
@@ -849,7 +890,7 @@ near those lines correspond to high step-count fidelity.}
 \label{fig:overseg}
 \end{figure}
 
-\subsection{Robustness checks}
+\subsection{Robustness checks}\label{sec:robustness}
 
 Three robustness checks bear on the pilot's internal validity.
 
@@ -881,7 +922,11 @@ is robust to the choice of extractor model family, the entire pipeline
 was re-run on the same 26-document pilot with the per-chunk extractor
 and whole-document oracle both switched to OpenAI gpt-4o-mini, holding
 every other stage (chunkers, sampling seed, merge logic, alignment
-threshold, metrics) constant. The rerun was 2,290 API calls and completed in approximately
+threshold, metrics) constant. The rerun was 2{,}290 API calls (a
+small variation from the Gemini run's 2{,}292 reflects two cells where
+the OpenAI extractor produced one fewer chunk-graph call before the
+sampling cap was hit; the seed and sampling logic are identical) and
+completed in approximately
 two hours of wall clock. Table~\ref{tab:robust} reports per-chunker
 means on the 15 documents where both oracles produced a non-empty
 graph (the apples-to-apples paired comparison); the OpenAI side of the
@@ -986,7 +1031,7 @@ recovered preconditions at the highest rate of any chunker tested (0.268
 and 0.208 versus 0.085--0.181). The two strongest step-count-fidelity comparisons against the
 simplest baselines reach uncorrected $p=0.046$ (recursive, full
 corpus) and $p=0.040$ (fixed-size, procedural subset); under a strict
-family-wise correction across the 24 paired tests run in the pilot
+family-wise correction across the 48 paired tests run in the pilot
 neither would survive, so these are reported as directional results
 supported by per-document win/tie/loss tallies (17/0/9 and 12/1/7
 respectively) rather than as multiplicity-corrected significant
@@ -1051,19 +1096,25 @@ both ``recovering the document's true step granularity'' and ``looking
 like a whole-document pass on the same model,'' and the two are
 confounded in the present setup. This is named explicitly: count
 fidelity and PAC's structural objective point in the same direction by
-construction. Precondition recall is more independent of this
-mechanical coupling than count fidelity (a precondition can be present
-or absent at any chunk granularity) and is therefore the more
-informative of the two metrics PAC leads on, though it too is computed
-against the same oracle. The cross-extractor robustness check reported
-in Results gives direct empirical evidence for this concern: switching
-the extractor and oracle to OpenAI gpt-4o-mini changes the
-step-count-fidelity rank order on the 15 documents where both oracles
-return non-empty graphs (PAC drops to third; semantic chunking leads),
-which suggests that the chunker ranking on this pilot is partly a
-function of the model used to evaluate the chunks. The clean break is
-a hand-annotated gold subset; the pilot results should therefore be
-read as motivating but not settling the underlying empirical question.
+construction. An earlier version of this work argued that precondition
+recall was the more trustworthy of the two metrics PAC leads on
+because the presence or absence of a precondition does not in
+principle depend on chunk granularity; that argument is retracted here
+in light of the cross-extractor robustness check, which shows that the
+Gemini Flash oracle identified at least one precondition on every
+one of the 26 pilot documents, while the gpt-4o-mini oracle returned
+zero preconditions on every one of the 15 documents for which it
+produced any oracle graph at all. A precondition target that swings
+from universally present to universally absent depending on the judge
+model is not a stable target, and the instability applies to the
+Gemini precondition-recall numbers reported here as well. The
+cross-extractor robustness check is therefore direct empirical
+evidence not only that the step-count-fidelity rank order changes
+between extractors (PAC drops from first to third), but also that the
+silver-standard precondition signal is itself extractor-dependent.
+The clean break is a hand-annotated gold subset; the pilot results
+should be read as motivating, but not settling, the underlying
+empirical question.
 
 Second, the whole-document oracle prompt instructs the model to be
 thorough, while the per-chunk prompt instructs it to be conservative
@@ -1075,7 +1126,7 @@ whole-document pass and a single-chunk pass on a document that fits in
 one chunk return identical graphs.
 
 Third, the corpus is a 26-document pilot of public US-government SOPs.
-Even uncorrected, only two of 24 paired tests reach $p<0.05$, and
+Even uncorrected, only two of 48 paired tests reach $p<0.05$, and
 neither would survive a strict family-wise correction at
 $\alpha=0.05$. PAC is not claimed to be universally better than every
 chunker; the claim is that it is consistently directionally better on
@@ -1160,34 +1211,46 @@ the pilot leaves intact.
 \section{Conclusions}
 %======================================================================
 
-This work treats chunking as a load-bearing stage of an LLM
-SOP-automation pipeline rather than as a neutral preprocessing step.
-Three structural-fidelity properties were formalised for procedural
-text: step-order preservation, precondition adjacency, and
-safety-constraint attachment. Step-count fidelity was introduced as
-the counterpart to Kendall's $\tau$ that exposes the over-segmentation
-pathology under which order-only metrics reward chunkers that fragment
-the source into a long, noisy step list. On a 26-document pilot of
-publicly available US-government SOPs, the four widely used baseline
-chunkers (fixed-size, recursive, semantic, layout-aware) over-segment
-the source four- to nine-fold relative to a whole-document oracle, a
-finding that is robust to the choice of extractor and to the
-merge-threshold sweep reported in the Robustness checks. A
-cross-extractor robustness check (Gemini~Flash versus OpenAI
-gpt-4o-mini) shows that chunker ranking under LLM-based evaluation is
-partly extractor-dependent, which is direct empirical support for
-treating same-model coupling between extractor and oracle as the
-deepest remaining confound. The position-aware chunker proposed here
-is offered as a transparent rule-based existence proof that a
-structure-preserving chunker can avoid the over-segmentation pathology
-by construction; it leads on step-count fidelity under the
-Gemini-based pilot at uncorrected $p<0.05$ against the two simplest
-baselines but the lead does not replicate under gpt-4o-mini and would
-not survive a family-wise correction. The corpus manifest, both
-extractor runs, the pipeline, and a reference PAC implementation are
-released so that the pilot can be extended; the natural next step is
-a hand-annotated gold subset that breaks the same-model coupling and
-permits a true gold-standard evaluation of PAC and its competitors.
+The durable contributions of this work are evaluation contributions
+and one applied existence proof, in that order. The first
+methodological contribution is that step-count fidelity, used
+alongside Kendall's $\tau$, exposes an \emph{over-segmentation
+pathology} that an order-only protocol rewards: a chunker that
+fragments the source into a long noisy step list can produce a
+healthy $\tau$ on output that is unusable for automation, because
+$\tau$ is computed only over aligned gold steps and is therefore blind
+to spurious extra steps. The second methodological contribution is
+empirical evidence, from a cross-extractor robustness check (Gemini
+Flash versus OpenAI gpt-4o-mini), that chunker rankings under
+LLM-based evaluation are partly extractor-dependent: the
+step-count-fidelity rank order of five chunkers changes between the
+two extractors on the 15 documents where both oracles return
+non-empty graphs, and the same-model coupling between the per-chunk
+extractor and the whole-document oracle is therefore the deepest
+remaining confound in LLM-judged chunker evaluations of this kind.
+These two findings hold regardless of which chunker is best.
+
+The applied contribution is the position-aware chunker (PAC), offered
+as a transparent rule-based existence proof that a structure-preserving
+chunker can avoid the over-segmentation pathology by construction. PAC
+produces the highest mean step-count fidelity on the Gemini-based
+pilot, with two uncorrected pairwise comparisons reaching $p<0.05$
+that would not survive a family-wise correction across the 48 paired
+tests run; the measured advantage is concentrated in the 5 Nuclear
+Regulatory Commission inspection procedures whose densely numbered
+step structure matches PAC's rule set, does not replicate when the
+extractor and oracle are switched to gpt-4o-mini, and is partly
+confounded with the same-model coupling named above. PAC is therefore
+presented as a useful baseline of a structure-preserving chunker, not
+as an empirical winner against the four generic baselines at this
+corpus scale.
+
+The corpus manifest, both extractor runs, the pipeline, the
+supplementary tables, and the reference PAC implementation are
+released so that the pilot can be extended. The natural next step
+toward a true empirical answer is a hand-annotated gold subset of
+$\approx 25$--$50$ documents that breaks the same-model coupling and
+permits a gold-standard evaluation of PAC and its competitors.
 
 %======================================================================
 \section{Supplementary information}
@@ -1284,15 +1347,25 @@ processing charge (APC), if applicable, will be addressed at the
 acceptance stage.}
 
 % --- Data Availability Statement (MDPI required) ---
-\dataavailability{All documents in the pilot corpus are
-US-government public-domain works retrievable from the URLs in the
-released corpus manifest, which records the source URL, SHA-256
-content hash, and per-document metadata for each of the 26 SOPs. The
-per-cell extractor outputs, merged document-level graphs, oracle
-graphs, and analysis CSVs for both extractor runs (Gemini~Flash and
-OpenAI gpt-4o-mini) are released as JSON and CSV files in the project
-repository. Supplementary Tables~S1--S3 are provided as CSV files with
-the submission.}
+\dataavailability{All code, data, and paper sources are released in a
+public GitHub repository at
+\url{https://github.com/gauravsingla05/sop-chunking-pilot}. The
+repository contains: (i) the corpus manifest
+(\texttt{data/manifest.csv}, with source URL, SHA-256 content hash,
+and per-document metadata for each of the 26 pilot SOPs; the source
+PDFs themselves are US-government public-domain works retrievable from
+the manifest URLs and are excluded from the repository to keep it
+small); (ii) the full pipeline source under \texttt{sop-corpus/src/}
+(five chunker implementations including PAC, multi-backend LLM
+extractor, resumable per-cell runner, merge logic, metrics, and
+analysis scripts); (iii) the complete per-cell extractor outputs,
+merged document-level graphs, oracle graphs, metrics JSONL, and
+analysis CSVs for both extractor runs (Gemini~Flash and OpenAI
+gpt-4o-mini) under \texttt{data/runs/}; (iv) Supplementary
+Tables~S1--S3 as CSV files at the repository root; and (v) the LaTeX
+sources for this submission and for the parallel Scientific Reports
+submission. A Zenodo DOI for the citable release will be added here at
+the camera-ready stage.}
 
 % --- Acknowledgments ---
 % \acknowledgments{}  % none required for single-author independent research
