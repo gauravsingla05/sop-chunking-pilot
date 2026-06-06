@@ -1,0 +1,6 @@
+chunker,n_cells,step_tau_mean,step_tau_median,step_precision_mean,step_precision_median,step_count_fidelity_mean,step_count_fidelity_median,precondition_recall_mean,precondition_recall_median,constraint_f1_mean,constraint_f1_median,orphan_constraint_rate_mean,orphan_constraint_rate_median
+fixed,26,0.2206,0.1073,0.2214,0.1886,0.381,0.3671,0.1712,0.0,0.0354,0.0,0.2211,0.2206
+recursive,26,0.2552,0.2123,0.2052,0.1723,0.3675,0.3297,0.1559,0.0,0.0364,0.0,0.22,0.189
+semantic,26,0.2383,0.1379,0.2253,0.2152,0.4168,0.3711,0.1324,0.0,0.0303,0.0,0.244,0.1962
+layout_aware,26,0.161,0.0,0.2468,0.1975,0.3912,0.3472,0.1806,0.0,0.0247,0.0,0.2062,0.2
+pac,26,0.2153,0.1669,0.2387,0.1913,0.4641,0.424,0.2677,0.0,0.0334,0.0,0.1896,0.1181

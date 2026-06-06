@@ -1,0 +1,39 @@
+Run: pilot-001-gemini    docs: 26    cells: 130    skipped: 0
+
+Per-chunker mean of each structural-fidelity metric (higher τ/recall/F1 is better; lower orphan is better):
+
+  chunker          n       τ  sprec  count  pre_rec  cons_F1  orphan
+  fixed           26   0.221  0.221  0.381    0.171    0.035   0.221
+  recursive       26   0.255  0.205  0.367    0.156    0.036   0.220
+  semantic        26   0.238  0.225  0.417    0.132    0.030   0.244
+  layout_aware    26   0.161  0.247  0.391    0.181    0.025   0.206
+  pac             26   0.215  0.239  0.464    0.268    0.033   0.190
+
+PAC vs each baseline (paired Wilcoxon signed-rank; Δ = PAC − baseline;
+for orphan_constraint_rate we negate so '+Δ' always means PAC wins):
+
+  baseline       metric                   n        Δ      W  pac:tie:base       p
+  fixed          step_tau                26  -0.0053 +109.0   11: 5:10  0.8213 
+  fixed          step_precision          26  +0.0173 +126.0   14: 1:11  0.3260 
+  fixed          step_count_fidelity     26  +0.0831  +89.0   14: 2:10  0.0814 
+  fixed          precondition_recall     26  +0.0965   +9.0    6:18:2   0.2076 
+  fixed          constraint_f1           26  -0.0020   +7.0    3:21:2   0.8927 
+  fixed          orphan_constraint_rate  26  +0.0315 +102.0   13: 3:10  0.2735 
+  recursive      step_tau                26  -0.0399  +98.0   10: 5:11  0.5430 
+  recursive      step_precision          26  +0.0335 +106.0   15: 2:9   0.2087 
+  recursive      step_count_fidelity     26  +0.0967  +97.0   17: 0:9   0.0462*
+  recursive      precondition_recall     26  +0.1119  +14.0    7:15:4   0.0912 
+  recursive      constraint_f1           26  -0.0030  +14.0    4:19:3   1.0000 
+  recursive      orphan_constraint_rate  26  +0.0304  +90.0   13: 5:8   0.3754 
+  semantic       step_tau                26  -0.0230 +146.0   12: 2:12  0.9090 
+  semantic       step_precision          26  +0.0134 +116.0   13: 2:11  0.3313 
+  semantic       step_count_fidelity     26  +0.0473 +117.0   11: 3:12  0.5230 
+  semantic       precondition_recall     26  +0.1353  +18.0    8:14:4   0.0995 
+  semantic       constraint_f1           26  +0.0031  +14.0    4:19:3   1.0000 
+  semantic       orphan_constraint_rate  26  +0.0544 +111.0   12: 4:10  0.6148 
+  layout_aware   step_tau                26  +0.0543 +101.0   13: 4:9   0.4077 
+  layout_aware   step_precision          26  -0.0081 +106.0   13: 4:9   0.5057 
+  layout_aware   step_count_fidelity     26  +0.0729 +112.0   12: 3:11  0.4291 
+  layout_aware   precondition_recall     26  +0.0871  +34.0    7:13:6   0.4216 
+  layout_aware   constraint_f1           26  +0.0087  +11.0    4:19:3   0.6121 
+  layout_aware   orphan_constraint_rate  26  +0.0166 +130.0   12: 3:11  0.8078 

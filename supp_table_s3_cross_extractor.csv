@@ -1,0 +1,9 @@
+metric,extractor,fixed,recursive,semantic,layout_aware,pac
+step_count_fidelity,gemini-flash,0.3569,0.3699,0.431,0.3806,0.5161
+step_count_fidelity,gpt-4o-mini,0.3016,0.2675,0.3271,0.2706,0.2773
+step_tau,gemini-flash,0.2232,0.22,0.1689,0.2062,0.0826
+step_tau,gpt-4o-mini,0.3175,0.1745,0.216,0.2835,0.3014
+step_precision,gemini-flash,0.2289,0.2063,0.2236,0.2698,0.2162
+step_precision,gpt-4o-mini,0.2956,0.2121,0.2588,0.2698,0.1778
+precondition_recall,gemini-flash,0.1889,0.1178,0.1683,0.1528,0.2783
+precondition_recall,gpt-4o-mini,1.0,1.0,1.0,1.0,1.0
