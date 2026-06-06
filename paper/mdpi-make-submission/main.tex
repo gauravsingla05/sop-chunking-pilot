@@ -383,8 +383,28 @@ The pilot corpus is 26 publicly available US-government SOPs and
 procedural documents harvested by an automated crawler over the public
 document repositories of OSHA, the Nuclear Regulatory Commission, the
 Environmental Protection Agency, and CDC/NIOSH. All are US-federal
-public-domain works, so the corpus manifest (source URLs, SHA-256
-hashes, and per-document metadata) is released without restriction.
+public-domain works.
+
+The corpus is distributed as a manifest rather than as a redistributed
+binary collection: the file \texttt{data/manifest.csv} in the public
+repository at
+\url{https://github.com/gauravsingla05/sop-chunking-pilot} records, for
+each document, the source URL, the SHA-256 hash of the canonical PDF
+bytes, the source agency, the page count, the byte size, and the
+language and step-marker filter flags. The 26-document pilot slice and
+the 20-document procedural-only slice are pinned in
+\texttt{data/pilot-n30.csv} and \texttt{data/pilot-procedural.csv}
+respectively, by SHA-256 reference back into the manifest, so the
+exact set of documents used in the pilot is unambiguous independent of
+agency URL drift. The PDF binaries themselves are not redistributed
+through the repository; instead, the script
+\texttt{sop-corpus/scrape.py} re-downloads them from the manifest
+URLs, and the integrity of the downloaded files can be verified
+against the recorded SHA-256 hashes before the pipeline is run.
+Documents whose SHA-256 has changed since the pilot was conducted will
+be flagged at this verification step; in that case the original bytes
+remain retrievable via the Internet Archive or the agency's document
+repository search by title.
 
 Documents span 6 to 614 pages and an estimated 3 to 118 procedural
 steps each, covering reactor-inspection procedures (NRC, 5 documents),
@@ -399,10 +419,14 @@ surface keywords but which lack genuine step structure on inspection:
 an annual report (a centre accomplishments summary), a memorandum of
 understanding between regulatory bodies, three administrative policies
 (one each on administration of gifts, sponsorship approvals, and
-general administration), and a science-advisory report. We report both slices because the full
-corpus shows what the surface filter admits and the procedural subset
-shows the chunkers' behaviour on the document type the work is
-ultimately about.
+general administration), and a science-advisory report. Both slices
+are reported because the full corpus shows what the surface filter
+admits and the procedural subset shows the chunkers' behaviour on the
+document type the work is ultimately about. End-to-end reproduction
+instructions, including which Python version, which API key
+environment variables, and which command-line invocations produced
+each table in this paper, are in \texttt{README.md} at the repository
+root.
 
 \subsection{Oracle ground truth}
 
