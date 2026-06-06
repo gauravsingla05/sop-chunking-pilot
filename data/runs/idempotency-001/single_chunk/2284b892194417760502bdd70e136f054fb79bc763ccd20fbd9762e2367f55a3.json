@@ -1,0 +1,9 @@
+{
+  "sha": "2284b892194417760502bdd70e136f054fb79bc763ccd20fbd9762e2367f55a3",
+  "title": "IP 69005",
+  "n_chars": 19815,
+  "per_chunk_n_steps": 0,
+  "oracle_n_steps": 12,
+  "gap_oracle_minus_perchunk": 12,
+  "per_chunk_error": null
+}

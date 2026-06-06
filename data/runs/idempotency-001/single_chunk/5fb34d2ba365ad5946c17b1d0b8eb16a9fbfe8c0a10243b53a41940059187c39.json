@@ -1,0 +1,9 @@
+{
+  "sha": "5fb34d2ba365ad5946c17b1d0b8eb16a9fbfe8c0a10243b53a41940059187c39",
+  "title": "CATEGORY:  General Administration",
+  "n_chars": 16809,
+  "per_chunk_n_steps": 0,
+  "oracle_n_steps": 10,
+  "gap_oracle_minus_perchunk": 10,
+  "per_chunk_error": null
+}

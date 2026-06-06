@@ -1,0 +1,9 @@
+{
+  "sha": "41f79bcd69e6c94bfdbf8489982cfed31af04c3c98378abb42fc5bf727efd236",
+  "title": "SRM-COMSECY-20-0012: Enclosure 1 - Memorandum of Understanding Between the U.S. ",
+  "n_chars": 17043,
+  "per_chunk_n_steps": 0,
+  "oracle_n_steps": 10,
+  "gap_oracle_minus_perchunk": 10,
+  "per_chunk_error": null
+}

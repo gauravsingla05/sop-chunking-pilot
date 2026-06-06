@@ -27,7 +27,7 @@ sop-chunking-pilot/
 ├── data/
 │   ├── manifest.csv         all 88 candidate documents (URL, SHA-256, metadata)
 │   ├── pilot.csv            tiny smoke-test slice
-│   ├── pilot-n30.csv        the 26-document headline pilot
+│   ├── pilot-n26.csv        the 26-document headline pilot
 │   ├── pilot-procedural.csv 20-document procedural-only subset
 │   └── runs/
 │       ├── pilot-001-gemini/    Gemini Flash run (chunk_graphs, merged, oracle, metrics, analysis CSVs)
@@ -70,7 +70,7 @@ pip install -r requirements.txt
 
 ```sh
 python scrape.py --manifest ../data/manifest.csv --out-dir ../data/pdfs
-python -m src.pipeline.extract_text --pilot ../data/pilot-n30.csv
+python -m src.pipeline.extract_text --pilot ../data/pilot-n26.csv
 ```
 
 ### 3. Run the pipeline
@@ -82,7 +82,7 @@ one with `EXTRACTOR_BACKEND`.
 # Gemini Flash (free tier)
 export GEMINI_API_KEY=your-key-here
 EXTRACTOR_BACKEND=gemini-api python -m src.pipeline.run \
-    --pilot ../data/pilot-n30.csv \
+    --pilot ../data/pilot-n26.csv \
     --run-id pilot-001-gemini \
     --sample-chunks 20 --seed 0
 
@@ -90,7 +90,7 @@ EXTRACTOR_BACKEND=gemini-api python -m src.pipeline.run \
 export OPENAI_API_KEY=your-key-here
 EXTRACTOR_BACKEND=openai-api OPENAI_MODEL=gpt-4o-mini \
   python -m src.pipeline.run \
-    --pilot ../data/pilot-n30.csv \
+    --pilot ../data/pilot-n26.csv \
     --run-id pilot-002-openai \
     --sample-chunks 20 --seed 0
 ```
@@ -102,8 +102,8 @@ to override.
 ### 4. Re-derive the analysis tables
 
 ```sh
-python -m src.eval.analyze --run-id pilot-001-gemini --pilot ../data/pilot-n30.csv
-python -m src.eval.analyze --run-id pilot-002-openai --pilot ../data/pilot-n30.csv
+python -m src.eval.analyze --run-id pilot-001-gemini --pilot ../data/pilot-n26.csv
+python -m src.eval.analyze --run-id pilot-002-openai --pilot ../data/pilot-n26.csv
 ```
 
 Outputs are written under `data/runs/<run-id>/analysis*`.

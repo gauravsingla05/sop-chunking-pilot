@@ -1,0 +1,9 @@
+{
+  "sha": "90ccf55f921c31f10a3d695cfe748e644c1fabf9d2fef8bf5bd7521b44fd33b1",
+  "title": "D:\\EMCNEW\\PROPOSED\\PS-10.PDF",
+  "n_chars": 22550,
+  "per_chunk_n_steps": 0,
+  "oracle_n_steps": 18,
+  "gap_oracle_minus_perchunk": 18,
+  "per_chunk_error": null
+}

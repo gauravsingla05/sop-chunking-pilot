@@ -1,0 +1,9 @@
+{
+  "sha": "c0b6acb173ada5a172a70648213e6558b4e6580f67d604f4e9353412f0b9eec8",
+  "title": "Securing Approval for Sponsorship of Conferences",
+  "n_chars": 25940,
+  "per_chunk_n_steps": 0,
+  "oracle_n_steps": 21,
+  "gap_oracle_minus_perchunk": 21,
+  "per_chunk_error": null
+}

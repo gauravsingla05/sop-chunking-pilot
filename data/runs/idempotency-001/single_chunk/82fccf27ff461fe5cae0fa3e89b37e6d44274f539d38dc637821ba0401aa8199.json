@@ -1,0 +1,9 @@
+{
+  "sha": "82fccf27ff461fe5cae0fa3e89b37e6d44274f539d38dc637821ba0401aa8199",
+  "title": "Food Service Guidelines in CDC-Owned or -Operated Dining and Vending Facilities",
+  "n_chars": 18305,
+  "per_chunk_n_steps": 7,
+  "oracle_n_steps": 5,
+  "gap_oracle_minus_perchunk": -2,
+  "per_chunk_error": null
+}
