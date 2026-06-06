@@ -1,9 +1,9 @@
-sha10,title,n_chars,per_chunk_n_steps_conservative,oracle_n_steps_thorough,gap_oracle_minus_perchunk
-1e8543bf95,IP 69009,16587,11,9,-2
-2284b89219,IP 69005,19815,0,12,12
-41f79bcd69,SRM-COMSECY-20-0012: Enclosure 1 - Memorandum of Understanding Between the U.S. ,17043,0,10,10
-5fb34d2ba3,CATEGORY:  General Administration,16809,0,10,10
-6a7b67ee11,IP 69012,28628,0,28,28
-82fccf27ff,Food Service Guidelines in CDC-Owned or -Operated Dining and Vending Facilities,18305,7,5,-2
-90ccf55f92,D:\EMCNEW\PROPOSED\PS-10.PDF,22550,0,18,18
-c0b6acb173,Securing Approval for Sponsorship of Conferences,25940,0,21,21
+sha10,title,n_chars,whole_conservative_n_steps,whole_thorough_oracle_n_steps,chunked_conservative_fixed,chunked_conservative_recursive,chunked_conservative_semantic,chunked_conservative_layout_aware,chunked_conservative_pac
+1e8543bf95,IP 69009,16587,11,9,49,47,35,44,10
+2284b89219,IP 69005,19815,0,12,34,44,37,36,21
+41f79bcd69,SRM-COMSECY-20-0012: Enclosure 1 - Memorandum of Understanding Between the U.S. ,17043,0,10,21,22,16,15,11
+5fb34d2ba3,CATEGORY:  General Administration,16809,0,10,14,18,19,14,15
+6a7b67ee11,IP 69012,28628,0,28,76,65,67,83,26
+82fccf27ff,Food Service Guidelines in CDC-Owned or -Operated Dining and Vending Facilities,18305,7,5,20,23,17,21,18
+90ccf55f92,D:\EMCNEW\PROPOSED\PS-10.PDF,22550,0,18,41,36,43,31,32
+c0b6acb173,Securing Approval for Sponsorship of Conferences,25940,0,21,37,36,38,43,38

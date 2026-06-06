@@ -1,13 +1,15 @@
 # SOP Chunking Pilot
 
-Research artefact for the paper *Position-Aware Chunking for Industrial
-Standard-Operating-Procedure Automation: Preserving Step Granularity and
-Preconditions in LLM-Extracted Workflows.*
+Research artefact for the paper *Step-Count Fidelity as a Companion
+Metric for Chunking Procedural Text, and the Instability of LLM-Judged
+Chunker Evaluation: A Pilot on Industrial Standard-Operating-Procedure
+Automation.*
 
 This repository contains the corpus manifest, the full evaluation pipeline,
-both LLM extractor runs (Gemini Flash and OpenAI gpt-4o-mini), the analysis
-scripts that produced the tables in the paper, and the two LaTeX submissions
-(Scientific Reports and MDPI MAKE).
+both LLM extractor runs (Gemini Flash and OpenAI gpt-4o-mini), the
+matched-prompt multiplicity-isolation outputs, the analysis scripts that
+produced the tables in the paper, and the LaTeX source for the MDPI MAKE
+submission.
 
 ## Repository layout
 
@@ -33,11 +35,11 @@ sop-chunking-pilot/
 │       ├── pilot-001-gemini/    Gemini Flash run (chunk_graphs, merged, oracle, metrics, analysis CSVs)
 │       └── pilot-002-openai/    OpenAI gpt-4o-mini cross-extractor run
 ├── paper/
-│   ├── scientific-reports-official/    LaTeX source, Springer wlscirep template
 │   └── mdpi-make-submission/            LaTeX source, MDPI mdpi template, MAKE journal
 ├── supp_table_s1_chunk_counts.csv       chunk counts per (document, chunker)
 ├── supp_table_s2_per_stratum.csv        per-stratum metric means
-└── supp_table_s3_cross_extractor.csv    Gemini vs OpenAI on the 15-doc paired slice
+├── supp_table_s3_cross_extractor.csv    Gemini vs OpenAI on the 15-doc paired slice
+└── supp_table_s4_idempotency_control.csv matched-prompt multiplicity isolation on 8 small docs
 ```
 
 ## What is in here vs. what is not
@@ -113,12 +115,7 @@ Outputs are written under `data/runs/<run-id>/analysis*`.
 Each paper folder is a standalone LaTeX project.
 
 ```sh
-# Scientific Reports submission
-cd paper/scientific-reports-official
-pdflatex main.tex && bibtex main && pdflatex main.tex && pdflatex main.tex
-
-# MDPI MAKE submission
-cd ../mdpi-make-submission
+cd paper/mdpi-make-submission
 pdflatex main.tex && bibtex main && pdflatex main.tex && pdflatex main.tex
 ```
 
