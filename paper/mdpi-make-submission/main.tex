@@ -77,7 +77,7 @@ gold subset and a prompt-symmetric re-evaluation can be conducted on
 the same documents.}
 
 \keyword{position-aware chunking; SOP-to-workflow automation; large
-language models; document understanding; safety-critical automation}
+language models; document understanding; LLM-as-judge evaluation}
 
 \begin{document}
 
@@ -452,19 +452,46 @@ remain retrievable via the Internet Archive or the agency's document
 repository search by title.
 
 Documents span 6 to 614 pages and an estimated 3 to 118 procedural
-steps each, covering reactor-inspection procedures (NRC, 5 documents),
-analytical method SOPs (EPA, 12 documents), biosafety procedures and
-occupational-health publications (CDC/NIOSH, 6 documents), and
-occupational-safety technical manuals (OSHA, 3 documents). Filtering
-was applied at the manifest level to require step markers,
-safety-related keywords, English language, and a minimum page count.
-The 20-document \emph{procedural-only} subset (OSHA 3, NRC 4, CDC 2,
-EPA 11) excludes six documents that the manifest filter admitted on
-surface keywords but which lack genuine step structure on inspection:
-an annual report (a centre accomplishments summary), a memorandum of
-understanding between regulatory bodies, three administrative policies
-(one each on administration of gifts, sponsorship approvals, and
-general administration), and a science-advisory report. Both slices
+steps each. The full 26-document corpus contains 5 NRC documents
+(4 reactor-inspection procedures plus 1 memorandum of understanding
+admitted by the surface filter), 12 EPA documents (11 analytical-method
+SOPs plus 1 science-advisory report), 6 CDC/NIOSH documents (2
+biosafety / occupational-health publications plus 4 administrative
+documents admitted by the surface filter), and 3 OSHA
+occupational-safety technical manuals. Filtering was applied at the
+manifest level to require step markers, safety-related keywords,
+English language, and a minimum page count. The 20-document
+\emph{procedural-only} subset (OSHA 3, NRC 4, CDC 2, EPA 11) excludes
+the six documents listed in Table~\ref{tab:exclusions} that the
+manifest filter admitted on surface keywords but which lack genuine
+step structure on inspection. The high false-positive rate of the
+surface filter on CDC/NIOSH documents (4 of 6 excluded) reflects that
+agency's mixed publishing pattern of operational guidance and
+administrative records under similar URL paths and titles; subsequent
+work on industrial-SOP automation could replace CDC/NIOSH with a more
+operational corpus partition.
+
+\begin{table}[ht]
+\centering
+\caption{Documents excluded from the procedural-only subset. All six
+were admitted by the surface keyword/step-marker filter and removed
+post hoc by the author after inspection. The judgement was not
+double-annotated; the list is recorded in the released corpus
+manifest for auditability.}
+\label{tab:exclusions}
+\begin{tabular}{lll}
+\toprule
+Agency & Document type & Title (truncated) \\
+\midrule
+NRC      & MOU                  & SRM-COMSECY-20-0012 (Enclosure 1, MOU) \\
+EPA      & Science advisory     & EPA SAB 22-001 \\
+CDC/NIOSH & Annual report       & NCEZID Top 10 Accomplishments \\
+CDC/NIOSH & Admin policy        & Administration of Gifts (Policy 20170329) \\
+CDC/NIOSH & Admin policy        & Securing Approval for Sponsorship of Conferences \\
+CDC/NIOSH & Admin policy        & CATEGORY: General Administration \\
+\bottomrule
+\end{tabular}
+\end{table} Both slices
 are reported because the full corpus shows what the surface filter
 admits and the procedural subset shows the chunkers' behaviour on the
 document type the work is ultimately about. End-to-end reproduction
@@ -503,7 +530,19 @@ lexical matching (e.g.\ Jaccard at the same threshold) does not.
 \textbf{Step-count fidelity:}
 $1-|\hat{n}-n^{*}|/\max(\hat{n},n^{*})$, where $n^{*}$ and $\hat{n}$ are
 the gold and predicted step counts. The metric ranges over $[0,1]$ and
-exposes both under- and over-segmentation.
+is \emph{symmetric} on under- and over-segmentation: a chunker that
+declares half the gold steps and a chunker that declares twice the
+gold steps both score $0.5$. This symmetry is what step-count fidelity
+adds over step precision (below). Step precision penalises only
+over-generation: a chunker that under-segments but whose declared
+steps all align to gold steps scores $1.0$ on step precision while
+having missed real content; step-count fidelity flags this as a count
+mismatch. The two metrics are therefore not redundant. Under
+LLM-as-oracle evaluation as in this pilot, the level of step-count
+fidelity is partly determined by chunk count rather than by structural
+correctness (Section~\ref{sec:results}, ``Robustness checks''), but
+its qualitative diagnostic value as the symmetric companion to step
+precision and to $\tau$ survives that caveat.
 
 \textbf{Step-order accuracy:} Kendall's $\tau$ between the gold step
 order and the order of the aligned predicted steps, with unaligned
@@ -696,20 +735,15 @@ all 26 documents and all five chunkers.}
 
 Table~\ref{tab:headline} reports per-chunker means on the full
 26-document corpus and a 20-document procedural-only subset under the
-Gemini-based pilot. Six documents were excluded post hoc from the
-procedural subset as non-procedural: an annual report (a centre-level
-accomplishments summary), a memorandum of understanding between
-regulatory bodies, three administrative policies (administrative
-gifts, sponsorship approvals, general administration), and a
-science-advisory report. These documents were admitted by the corpus
-filter on the basis of language and surface keyword counts but, on
-inspection, lack genuine step structure. The exclusion judgement was
-made by the author alone and was not validated against a second
-annotator, which at this pilot's scale is a defensible but
-non-mechanical filter; the list of excluded documents is recorded in
-the released corpus manifest so the exclusion is auditable and the
-full-corpus numbers in Table~\ref{tab:headline} make the impact of
-the choice transparent.
+Gemini-based pilot. The six documents excluded post hoc from the
+procedural subset (1 NRC MOU, 1 EPA science-advisory report, 1
+CDC/NIOSH annual report, and 3 CDC/NIOSH administrative policies) are
+itemised in Table~\ref{tab:exclusions} in the Materials and Methods.
+The exclusion judgement was made by the author alone, was not
+double-annotated, and is recorded in the released corpus manifest so
+the choice is auditable; the full-corpus numbers in
+Table~\ref{tab:headline} make its impact on the per-chunker means
+transparent.
 
 Three structural caveats attach to every number in
 Table~\ref{tab:headline} and the reader should keep them in view
@@ -864,16 +898,18 @@ per-chunker Kendall's~$\tau$ means cluster within a narrow band
 comparison between PAC and a baseline on $\tau$ reaches statistical
 significance on this slice, and the direction varies. The
 cross-extractor robustness check reported in
-Section~\ref{sec:robustness} returns a different $\tau$ ranking on the
-15-document paired slice (fixed-size $>$ PAC $>$ layout-aware $>$
-semantic $>$ recursive on that slice; see Table~\ref{tab:robust}),
-which is itself further evidence that rank orderings on this pilot
-are slice- and extractor-sensitive. PAC's $\tau$ position within each slice is therefore slice-specific:
-within a narrow cluster on the full 26-document slice under Gemini
-Flash, and notably lower than the rest of the field on the 15-document
-paired slice under Gemini Flash (Table~\ref{tab:robust}, $\tau=0.083$
-versus 0.169--0.223 for the four generic chunkers on that slice),
-while ranking second under gpt-4o-mini on the same 15-document slice
+Section~\ref{sec:robustness} reports a different $\tau$ ranking on
+the 15-document paired slice \emph{under gpt-4o-mini}
+(fixed-size~$>$~PAC~$>$~layout-aware~$>$~semantic~$>$~recursive on
+that slice and that extractor; see Table~\ref{tab:robust}), which is
+itself further evidence that rank orderings on this pilot are
+slice- and extractor-sensitive. PAC's $\tau$ position is therefore
+slice- and extractor-specific. Under Gemini~Flash, PAC sits inside a
+narrow cluster on the full 26-document slice ($\tau=0.215$, all
+chunkers within 0.16--0.26) and falls notably below the cluster on
+the 15-document paired slice ($\tau=0.083$ versus 0.169--0.223 for
+the four generic chunkers; Table~\ref{tab:robust}, ``Gemini Flash''
+columns). Under gpt-4o-mini on the same 15 documents PAC is second
 ($\tau=0.301$). The qualitative summary is that PAC's $\tau$ is not
 the strongest signal in this pilot and the rank depends on which
 slice and which extractor is used to evaluate it; on the order axis,
@@ -1022,18 +1058,27 @@ inspection procedures cited above.
 \end{axis}
 \end{tikzpicture}
 \caption{Predicted step counts versus the whole-document oracle on
-two representative Nuclear Regulatory Commission inspection procedures:
-IP\,69009 (9 oracle steps) and IP\,69012 (28 oracle steps). Per-chunk
-extraction under the four generic chunkers yields step counts four to
-nine times the oracle's; PAC produces step lists whose size matches
-the oracle within one to two steps. Dashed horizontal lines mark the
-oracle step counts. The four- to nine-fold ratio is multiplicity-driven: a matched-prompt
-control (Section~\ref{sec:robustness}, ``Idempotency check'')
-attributes 9 to 16-fold inflation to chunked multi-call extraction
-alone with the prompt held conservative on both passes, so the
-chunked-versus-thorough-oracle ratio shown here is a conservative
-under-report of the multiplicity-driven inflation rather than evidence
-of it.}
+two representative Nuclear Regulatory Commission inspection
+procedures: IP\,69009 (9 oracle steps) and IP\,69012 (28 oracle
+steps). Per-chunk extraction under the four generic chunkers yields
+step counts that are 3.9$\times$ to 5.4$\times$ the oracle's on
+IP\,69009 (49, 47, 35, 44 declared steps) and 2.3$\times$ to
+3.0$\times$ the oracle's on IP\,69012 (76, 65, 67, 83 declared steps);
+PAC produces step lists whose size matches the oracle within one to
+two steps on both documents. Dashed horizontal lines mark the
+oracle step counts. The two illustrative documents sit at the low end
+of the four- to nine-fold corpus-wide spread of chunked-vs-oracle
+ratios reported elsewhere in this paper; the higher end of that
+spread reflects shorter inspection procedures and EPA
+analytical-method SOPs where the oracle declares few steps and a
+small absolute inflation produces a larger ratio. As discussed in the
+Robustness checks (Section~\ref{sec:robustness}, ``Idempotency
+check''), a matched-prompt control on the eight smallest documents
+attributes 9$\times$ to 16$\times$ inflation to multi-call chunked
+extraction alone with the prompt held conservative on both passes, so
+the chunked-vs-thorough-oracle ratio shown here is a conservative
+under-report of the multiplicity-driven inflation rather than
+evidence of it.}
 \label{fig:overseg}
 \end{figure}
 
@@ -1046,7 +1091,57 @@ idempotency control that decomposes the chunked-versus-oracle ratio
 of Figure~\ref{fig:overseg} into a multiplicity component (chunked
 vs.\ whole-document, prompt held constant) and a prompt-sensitivity
 component (oracle's reference count under thorough vs.\ conservative
-prompts on the same whole document).
+prompts on the same whole document). Four distinct ratios are reported
+elsewhere in this paper and Table~\ref{tab:ratios} states each one's
+numerator, denominator, document set, and prompt conditions in one
+place so the reader can cross-reference without reconstructing the
+comparison from prose.
+
+\begin{table}[ht]
+\centering
+\caption{Ratios reported in this paper, with their numerator,
+denominator, document set, and prompt condition. A.\ is the
+chunked-versus-oracle headline. B.\ is the matched-prompt
+multiplicity isolation. C.\ is the oracle's prompt-sensitivity
+instability. D.\ is the chunked-versus-thorough-oracle ratio on the
+same 8 small documents used for B and C, restated here for
+comparison.}
+\label{tab:ratios}
+\small
+\begin{tabular}{clllll}
+\toprule
+& Name & Numerator & Denominator & Document set & Prompts (num/denom) \\
+\midrule
+A & 4--9$\times$  & Chunked $\hat{n}$ (merged, generic chunkers)
+                  & Oracle $n^{*}$ (thorough)
+                  & 26-doc Gemini pilot, per-chunker mean
+                  & Conservative / Thorough \\
+B & 9--16$\times$ & Chunked $\hat{n}$ (merged, generic chunkers)
+                  & Conservative single-shot on whole doc
+                  & 8 smallest docs (idempotency control)
+                  & Conservative / Conservative \\
+C & 6.3$\times$   & Oracle $n^{*}$ (thorough)
+                  & Conservative single-shot on whole doc
+                  & 8 smallest docs (idempotency control)
+                  & Thorough / Conservative \\
+D & $\approx 2.5\times$ & Chunked $\hat{n}$ (merged, generic chunkers)
+                  & Oracle $n^{*}$ (thorough)
+                  & 8 smallest docs (idempotency control)
+                  & Conservative / Thorough \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Ratios A and D both compare chunked-conservative to thorough-oracle;
+A is the corpus-wide spread, D is the value on the eight smallest
+documents (consistent with A's lower end). Ratio B is the
+matched-prompt multiplicity isolation: the same numerator as A and D
+but with the denominator's thoroughness asymmetry removed. The fact
+that B is larger than A or D, by roughly the factor that C separates
+the two oracle prompts, is the multiplicity-driven inflation
+discussed in this section: the thorough oracle's larger $n^{*}$
+partially cancels the multiplicity in A and D, and removing that
+cancellation in B exposes the underlying multiplicity factor.
 
 \textbf{Merge-threshold sensitivity.} The Jaccard~0.78 step-dedup
 threshold contributes very little to the chunked-versus-oracle ratio.
@@ -1251,15 +1346,15 @@ would look like in the Discussion.
 The central finding of this pilot is that chunking is not a neutral
 preprocessing step for SOP automation. In RAG, a chunking misstep
 yields a less-relevant passage and, at worst, a wrong answer. In SOP
-automation the same misstep can drop a precondition and generate a
-workflow that omits PPE or an isolation step. On both the full 26-SOP
-corpus and a 20-document procedural-only subset, position-aware
-chunking produced workflow graphs that match gold-standard step
-granularity more closely (mean step-count fidelity 0.464 and 0.438
-versus 0.367--0.417 and 0.324--0.383 for the four baselines) and
-recovered preconditions at the highest rate of any chunker tested under
-the Gemini-Flash oracle (0.268
-and 0.208 versus 0.085--0.181). The two strongest step-count-fidelity comparisons against the
+automation the same misstep can drop a precondition. On both the
+full 26-SOP corpus and the 20-document procedural-only subset,
+position-aware chunking reports the highest per-chunker mean
+step-count fidelity (0.464 on the full corpus, 0.438 on the
+procedural subset, versus 0.367--0.417 and 0.324--0.383 respectively
+for the four baselines) and the highest precondition recall under
+the Gemini-Flash oracle (0.268 versus 0.132--0.181 for the baselines
+on the full corpus; 0.208 versus 0.085--0.181 on the procedural
+subset). The two strongest step-count-fidelity comparisons against the
 simplest baselines reach uncorrected $p=0.046$ (recursive, full
 corpus) and $p=0.040$ (fixed-size, procedural subset); under a strict
 family-wise correction across the 48 paired tests run in the pilot
@@ -1454,9 +1549,12 @@ $p<0.05$ against the two simplest baselines, but the lead does not
 replicate under gpt-4o-mini and would not survive a family-wise
 correction. The work motivates, but does not settle, the case for
 position-aware chunking as a default preprocessing choice in
-safety-critical SOP-automation pipelines, and the natural next step is
-a hand-annotated gold subset that breaks the same-model coupling
-the pilot leaves intact.
+SOP-automation pipelines; the natural next step is a hand-annotated
+gold subset that breaks the same-model coupling the pilot leaves
+intact. Application to operator-facing safety-critical workflows
+requires the additional constraint-attachment work flagged in
+Section~\ref{sec:methods-properties} and Discussion limitation~5,
+which the present pilot does not deliver.
 
 %======================================================================
 \section{Conclusions}
