@@ -235,11 +235,12 @@ set (on the largest single stratum, EPA analytical-method SOPs,
 layout-aware chunking wins instead), and the count-fidelity advantage
 does not replicate under gpt-4o-mini. PAC is therefore reported as a
 worked structure-preserving baseline rather than as an empirical
-winner. The corpus manifest, both extractor runs, the
-idempotency-control data, the pipeline, and the reference PAC
-implementation are released so that a hand-annotated gold subset and
-a prompt-symmetric re-evaluation can be conducted on the same
-documents.
+winner. The corpus manifest, all three oracle runs (Gemini~Flash,
+gpt-4o-mini, and the thoroughness-matched gpt-4o oracle pass), the
+matched-prompt multiplicity-isolation data, the pipeline, and the
+reference PAC implementation are released so that a hand-annotated
+gold subset and a prompt-symmetric re-evaluation can be conducted on
+the same documents.
 
 %======================================================================
 \section{Materials and Methods}
@@ -1725,9 +1726,11 @@ chunked-versus-oracle ratio elsewhere in this paper is a conservative
 under-report of the multiplicity-driven inflation rather than
 evidence of it.
 
-The corpus manifest, both extractor runs, the pipeline, the
-matched-prompt multiplicity-isolation outputs, the supplementary
-tables, and the reference PAC implementation are released
+The corpus manifest, all three oracle runs (Gemini~Flash,
+gpt-4o-mini, and the thoroughness-matched gpt-4o oracle pass), the
+pipeline, the matched-prompt multiplicity-isolation outputs, the
+supplementary tables, and the reference PAC implementation are
+released
 (\url{https://github.com/gauravsingla05/sop-chunking-pilot}) so that
 the pilot can be extended. The natural next step is a hand-annotated
 gold subset of $\approx 25$--$50$ documents evaluated under a
@@ -1809,13 +1812,18 @@ are exposed at module level in the released code.
 \vspace{6pt}
 
 % --- Supplementary material pointer (MDPI convention) ---
-\supplementary{The following supplementary tables are released with the
-manuscript: Supplementary Table~S1 (chunk counts per (document,
+\supplementary{The following supplementary tables are released with
+the manuscript: Supplementary Table~S1 (chunk counts per (document,
 chunker), sampled vs.\ full), Supplementary Table~S2 (per-stratum
 metric means), Supplementary Table~S3 (cross-extractor comparison on
-the 15-document slice). The corpus manifest, both extractor runs, the
-pipeline source, and the reference PAC implementation are available in
-the project repository (see Data Availability Statement).}
+the 15-document slice), and Supplementary Table~S4 (matched-prompt
+multiplicity-isolation data on the eight smallest documents that
+underlie the idempotency control). The corpus manifest, all three
+oracle runs (Gemini~Flash, gpt-4o-mini, and the thoroughness-matched
+gpt-4o oracle pass), the matched-prompt multiplicity-isolation
+outputs, the pipeline source, and the reference PAC implementation
+are available in the project repository (see Data Availability
+Statement).}
 
 % --- Author contributions (single author) ---
 \authorcontributions{Conceptualization, G.S.; methodology, G.S.;
@@ -1844,11 +1852,15 @@ small); (ii) the full pipeline source under \texttt{sop-corpus/src/}
 extractor, resumable per-cell runner, merge logic, metrics, and
 analysis scripts); (iii) the complete per-cell extractor outputs,
 merged document-level graphs, oracle graphs, metrics JSONL, and
-analysis CSVs for both extractor runs (Gemini~Flash and OpenAI
-gpt-4o-mini) under \texttt{data/runs/}; (iv) Supplementary
-Tables~S1--S4 as CSV files at the repository root; and (v) the LaTeX
-source for the present submission. The same repository carries the
-matched-prompt multiplicity-isolation outputs under
+analysis CSVs for both per-chunk extractor runs (Gemini~Flash under
+\texttt{data/runs/pilot-001-gemini/} and OpenAI gpt-4o-mini under
+\texttt{data/runs/pilot-002-openai/}) plus the standalone
+thoroughness-matched gpt-4o oracle pass under
+\texttt{data/runs/pilot-003-openai-gpt4o-oracle/} that underlies
+Table~\ref{tab:oracle-by-family}; (iv) Supplementary Tables~S1--S4
+as CSV files at the repository root; and (v) the LaTeX source for the
+present submission. The same repository carries the matched-prompt
+multiplicity-isolation outputs under
 \texttt{data/runs/idempotency-001/}, including the per-document
 counts that underlie Supplementary Table~S4. The work in this
 manuscript is not under consideration at any other journal. A Zenodo
