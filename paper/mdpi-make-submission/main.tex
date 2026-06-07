@@ -170,13 +170,17 @@ structure pay a cost beyond simple semantics\cite{liu2024lost}. Second, prior
 work on procedural-text understanding operates on whole documents under
 task-specific templates rather than characterising how upstream
 chunking by an LLM pipeline affects the recovered structure. Third,
-LLM-safety surveys focus on model alignment and verifiability while
-treating document preprocessing as a neutral stage, even though a
-precondition dropped at the chunking stage is downstream
-indistinguishable from an extractor hallucination. Together these gaps
+the LLM-as-a-judge literature has documented systematic biases in
+LLM-based evaluators---position bias, verbosity preference, and
+self-enhancement (a tendency to favour outputs from the same model
+family)\cite{zheng2023judging,panickssery2024selfpref}---but this
+literature has not been brought to bear on the evaluation of
+upstream-pipeline components such as chunkers, where the evaluator's
+judgements determine which chunker ``wins''. Together these gaps
 motivate a chunking evaluation that targets the structural job a
-chunker performs on procedural text, not the retrieval job for which
-it was originally designed.
+chunker performs on procedural text, and a controlled inspection of
+how the LLM-judge biases established for response-quality evaluation
+manifest in chunker rankings.
 
 This work studies three structural properties whose preservation
 through chunking is necessary (though not sufficient) for safe SOP
@@ -591,6 +595,42 @@ level.
 \textbf{Step-order accuracy:} Kendall's $\tau$ between the gold step
 order and the order of the aligned predicted steps, with unaligned
 gold steps placed at the end (worst position).
+
+\paragraph{Worked example contrasting the three step-level metrics.}
+A reviewer might reasonably ask whether step precision (below) is not
+already a sufficient companion to $\tau$ for the over-segmentation
+pathology, and whether step-count fidelity is therefore redundant.
+Table~\ref{tab:metric-comparison} shows the three metrics on three
+synthetic chunkers against a gold of 10 steps. Both step precision
+and step-count fidelity catch the over-segmenting chunker (row~3);
+only step-count fidelity catches the under-segmenting chunker
+(row~2), which $\tau$ misses (perfect order on the 5 aligned steps)
+and step precision misses (100\% of declared steps align). The
+distinguishing case for step-count fidelity over \{$\tau$, precision\}
+is therefore under-segmentation, in which a chunker drops content
+silently while every metric except count fidelity scores it well.
+This is a narrower contribution than ``catches the pathology'' would
+suggest, and the present paper makes that scope explicit.
+
+\begin{table}[ht]
+\centering
+\caption{Three synthetic chunker outputs against a gold of $n^{*}=10$
+steps, with the three step-level metrics. Under-segmentation
+(row~2) is the case in which step precision is uninformative ($1.0$)
+while step-count fidelity correctly flags the count mismatch ($0.5$).}
+\label{tab:metric-comparison}
+\small
+\begin{tabular}{lccccc}
+\toprule
+Chunker behaviour & $\hat{n}$ & $\hat{n}$ aligned to gold &
+$\tau$ & Step precision & Step-count fidelity \\
+\midrule
+Balanced (drops two)        & 10 & 8 & 0.78 & 0.80 & 1.00 \\
+Under-segmenting (precise)  &  5 & 5 & 1.00 & 1.00 & 0.50 \\
+Over-segmenting (noisy)     & 30 & 8 & 0.71 & 0.27 & 0.33 \\
+\bottomrule
+\end{tabular}
+\end{table}
 
 \textbf{Step precision:} fraction of predicted steps that align to
 some gold step. Step precision targets the over-generation axis that
@@ -1281,6 +1321,24 @@ layout-aware & 0.381 & 0.206 & 0.271 & 0.283 \\
 \end{tabular}
 \end{table}
 
+To quantify how robust the rank flip is to document resampling at this
+small slice size, a paired non-parametric bootstrap (2{,}000 resamples
+over the 15 shared documents) was run on the per-document
+step-count-fidelity values reported in Table~\ref{tab:robust}. Under
+Gemini Flash, PAC's bootstrap-mean step-count fidelity is 0.517 with a
+95\% CI of $[0.39, 0.65]$, semantic 0.432~$[0.33, 0.54]$, and
+layout-aware 0.383~$[0.27, 0.51]$; PAC is the rank-1 chunker in 93\%
+of resamples and semantic is rank-2 in 81\%. Under gpt-4o-mini on the
+\emph{same} 15 documents PAC drops to 0.277~$[0.17, 0.40]$ and is
+rank-1 in only 9\% of resamples (mode rank: 5, in 36\% of resamples),
+while semantic is rank-1 in 50\% and fixed-size is rank-2 in 29\%.
+The rank-1 chunker differs between the two extractors in 93\% of
+paired bootstrap resamples (1{,}858 of 2{,}000). The cross-extractor
+rank flip is therefore not a noise artefact of the small slice; it
+is a real, paired property of the two LLM judges on this corpus,
+albeit one whose interpretation is bounded by the family-failure
+concern reported below.
+
 The non-replication is not interpreted as a refutation of PAC's
 design. A natural objection to this cross-extractor evidence is that
 gpt-4o-mini may simply be too conservative an oracle under the present
@@ -1434,6 +1492,29 @@ would look like in the Discussion.
 \section{Discussion}\label{sec:discussion}
 %======================================================================
 
+\paragraph{What a practitioner can take away today.} Before the
+limitations, three concrete recommendations follow from this work and
+do not depend on the open empirical questions discussed below.
+\emph{(i)~Treat chunking as a controlled, auditable pipeline stage
+rather than a neutral preprocessing detail}: any future SOP-automation
+pipeline should pin the chunker version, ship with a small acceptance
+set of representative SOPs with their hand-checked step graphs, and
+re-evaluate against that set whenever the chunker or extractor
+changes. \emph{(ii)~Pair any order-of-steps metric with a count-fidelity
+metric}: as Table~\ref{tab:metric-comparison} makes explicit, an
+order-only protocol can reward a chunker that over-segments and a
+precision-only protocol can pass a chunker that under-segments;
+counting the steps as a companion check disambiguates both. \emph{(iii)~Do
+not rely on a single LLM as the oracle for chunker selection}: this
+paper's instability result (Section~\ref{sec:robustness}, Tables~6 and~7)
+shows that two LLM families differ enough on the same prompt that
+rankings reorder; whether the disagreement is genuine inter-judge
+disagreement or one family failing to follow the prompt, the practical
+implication is the same---hand-anchor the evaluation at the chunker-
+selection step. The PAC implementation released here is offered as a
+worked example of a structure-preserving chunker that practitioners
+can audit and adapt, not as a deployment default.
+
 The central finding of this pilot is that chunking is not a neutral
 preprocessing step for SOP automation. In RAG, a chunking misstep
 yields a less-relevant passage and, at worst, a wrong answer. In SOP
@@ -1552,7 +1633,14 @@ whole-document input regime the oracle receives than the
 over-segmenting baselines are. Step-count fidelity therefore rewards
 both ``recovering the document's true step granularity'' and ``looking
 like a whole-document pass on the same model,'' and the two are
-confounded in the present setup. This is named explicitly: count
+confounded in the present setup. This is the chunker-evaluation
+analogue of the self-enhancement bias documented in the LLM-as-a-judge
+literature for response-quality
+evaluation\cite{zheng2023judging,panickssery2024selfpref}, in which an
+LLM judge rates outputs from its own family more favourably; here the
+favouritism manifests as the same-model oracle scoring most highly the
+chunker whose output regime resembles its own whole-document input
+regime. This is named explicitly: count
 fidelity and PAC's structural objective point in the same direction by
 construction. An earlier version of this work argued that precondition
 recall was the more trustworthy of the two metrics PAC leads on
