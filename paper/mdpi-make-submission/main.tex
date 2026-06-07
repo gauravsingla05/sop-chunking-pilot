@@ -60,7 +60,17 @@ place of Gemini~Flash changes the step-count-fidelity rank order of
 five chunkers on the 15 documents for which both oracles return
 non-empty graphs, and the precondition signal swings from universal
 presence under Gemini~Flash (26 of 26 documents) to universal absence
-under gpt-4o-mini (0 of 15). The evaluation oracle is itself an LLM,
+under gpt-4o-mini (0 of 15). A natural concern is that gpt-4o-mini
+might be a degenerate second judge rather than a peer to Gemini Flash;
+a thoroughness-matched re-run of the oracle with gpt-4o under the
+identical prompt refutes that hypothesis empirically by producing an
+\emph{even more} conservative oracle (22 of 26 documents return empty
+step graphs and only 1 of 26 has any precondition under gpt-4o,
+compared with 11 of 26 and 9 of 26 under gpt-4o-mini). The OpenAI
+family is consistently more conservative than the Gemini family under
+the same prompt regardless of OpenAI model size, so the cross-extractor
+instability is a property of how the two model families respond to
+the oracle prompt, not of a single under-calibrated checkpoint. The evaluation oracle is itself an LLM,
 no human-annotated reference is included, and the pilot is
 underpowered: a retrospective paired-test power analysis indicates
 that detecting the closest pairwise effect against the semantic
@@ -518,6 +528,33 @@ silver-to-gold gap that would expose are deferred to future work; this
 is flagged as a methodological limitation in the Discussion.
 
 \subsection{Metrics}
+
+Linear text-segmentation evaluation has a long-standing pair of
+position-based metrics in $P_k$ \cite{beeferman1999statistical} and
+WindowDiff \cite{pevzner2002critique}, both of which slide a window
+over the document and penalise the segmenter when the number of
+boundaries within the window does not match the gold reference. These
+metrics are designed for boundary-position partitions of a single
+linear text and explicitly handle near-miss and count-discrepant
+segmentation, which makes them the right reference point for any new
+count-aware segmentation metric. The setting of this paper differs
+from theirs in two ways that motivate a different instrument. First,
+the unit of evaluation here is an extracted \emph{workflow graph}, not
+a boundary partition: gold and predicted step sets are aligned by
+embedding similarity (Section~\ref{sec:methods-properties}) and the
+metrics operate on aligned graph nodes rather than on token positions
+in the source text. Second, the alignment uses semantic
+(paraphrase-tolerant) cosine matching rather than verbatim
+substring identity, because the per-chunk extractor introduces
+paraphrase. Adapting $P_k$ or WindowDiff to this regime would require
+re-deriving their probabilistic semantics for graph-node alignment
+under paraphrase, which we have not done; step-count fidelity is the
+simpler instrument that nonetheless captures the count-discrepancy
+axis those metrics were designed to expose. We position it as
+deliberately narrower than $P_k$ or WindowDiff: it does not localise
+where the misalignment falls in the document, only how the predicted
+step list under- or over-counts relative to the reference, on the
+aligned-node graph that downstream workflow extraction consumes.
 
 For each (document, chunker) cell six structural metrics are
 computed. Because gold and predicted graphs use independent ids,
@@ -1235,17 +1272,61 @@ layout-aware & 0.381 & 0.206 & 0.271 & 0.283 \\
 \end{table}
 
 The non-replication is not interpreted as a refutation of PAC's
-design. The gpt-4o-mini oracle's strong conservatism (returning empty
-preconditions on every document and empty step graphs on 42\% of
-documents) is itself a confound, and a calibrated cross-extractor test
-would require an oracle of comparable thoroughness to Gemini Flash's.
-It is interpreted instead as direct evidence of the same-model
-coupling named as the deepest pilot-level limitation (Discussion): the
-chunker ranking is partly a function of which model is used to
-evaluate the chunks, and a hand-annotated gold subset is the only
-protocol that breaks the coupling cleanly. The cross-extractor result
-is reported in full because it provides the practitioner with an
-honest scope on the Gemini-based pilot result.
+design. A natural objection to this cross-extractor evidence is that
+gpt-4o-mini may simply be too conservative an oracle under the present
+prompt: its empty-graph rate (42\%) and zero-precondition behaviour
+(0/15) read more like under-performance than like genuine inter-judge
+disagreement, and a calibrated cross-extractor test would require a
+second oracle of comparable thoroughness to Gemini Flash's. To probe
+this, the oracle pass was repeated on the same 26 documents with the
+same oracle prompt but with gpt-4o (the larger, more capable OpenAI
+model in the same family as gpt-4o-mini) in the oracle role. The
+result is the opposite of the calibration that the objection would
+predict (Table~\ref{tab:oracle-by-family}): gpt-4o is \emph{more}
+conservative than gpt-4o-mini under the same prompt, returning empty
+step graphs on 22 of 26 documents (versus 11 of 26 under gpt-4o-mini)
+and identifying at least one precondition on only 1 of 26 documents
+(versus 9 of 26 under gpt-4o-mini), with a mean of 2.4 declared steps
+per document (versus 6.7 under gpt-4o-mini and 14.8 under Gemini
+Flash). Because the OpenAI conservatism scales \emph{with} model
+capability inside the OpenAI family, it cannot be attributed to
+gpt-4o-mini being a degenerate second judge: a stronger second judge
+in the same family is more degenerate by the same measures. The
+honest reading is that the conservatism is a property of how the
+OpenAI family responds to the present oracle prompt versus how the
+Gemini family does, and that ``a calibrated cross-extractor test''
+under the same prompt across vendors is not available to this work.
+What can be supported on this evidence is the narrower claim that
+LLM-as-oracle chunker rankings are not robust to choice of oracle
+model family, which is the load-bearing same-model coupling named as
+the deepest pilot-level limitation (Discussion): the chunker ranking
+is partly a function of which model is used to evaluate the chunks,
+and a hand-annotated gold subset is the only protocol that breaks the
+coupling cleanly. The cross-extractor result is reported in full
+because it provides the practitioner with an honest scope on the
+Gemini-based pilot result.
+
+\begin{table}[ht]
+\centering
+\caption{Oracle-pass output on the same 26 documents under the same
+oracle prompt, varying only the LLM family in the oracle role. The
+empty-graph and zero-precondition behaviour reported elsewhere for
+gpt-4o-mini does not reflect a degenerate-judge calibration issue:
+gpt-4o (the larger, more capable model in the same family) is more
+conservative on both axes under the same prompt. The conservatism is
+therefore a property of the family-prompt interaction, not of the
+specific gpt-4o-mini checkpoint.}
+\label{tab:oracle-by-family}
+\begin{tabular}{lrrrr}
+\toprule
+Oracle model & Mean steps/doc & Empty graphs & Mean preconditions/doc & Docs with $\geq 1$ precondition \\
+\midrule
+Gemini Flash  & 14.8 & 0 / 26  & 3.65 & 26 / 26 \\
+gpt-4o-mini   & 6.7  & 11 / 26 & 0.73 & 9 / 26 \\
+gpt-4o        & 2.4  & 22 / 26 & 0.04 & 1 / 26 \\
+\bottomrule
+\end{tabular}
+\end{table}
 
 \vspace{4pt}
 \noindent\textbf{Idempotency check: the oracle's reference count is
