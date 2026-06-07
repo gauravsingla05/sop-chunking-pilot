@@ -28,9 +28,10 @@
 % =============================================================
 % Title, author, affiliation, abstract, keywords
 % =============================================================
-\Title{Step-Count Fidelity as a Companion Metric for Chunking
-Procedural Text, and the Instability of LLM-Judged Chunker Evaluation:
-A Pilot on Industrial Standard-Operating-Procedure Automation}
+\Title{Step-Count Fidelity as a Diagnostic Companion Metric for
+Chunking Procedural Text, and the Instability of LLM-Judged Chunker
+Evaluation: A Pilot on Public Regulatory Procedural Documents as an
+Industrial Standard-Operating-Procedure Proxy}
 
 \Author{Gourav Singla $^{1,}$*}
 \AuthorNames{Gourav Singla}
@@ -41,47 +42,42 @@ gouravsingla05@gmail.com}
 
 \corres{Correspondence: gouravsingla05@gmail.com}
 
-\abstract{Large-language-model pipelines that turn industrial Standard
-Operating Procedures (SOPs) into executable workflows must first chunk
-the source document, but chunking strategies developed for
+\abstract{Large-language-model pipelines that turn Standard Operating
+Procedures (SOPs) into executable workflows must first chunk the
+source document, but chunking strategies developed for
 retrieval-augmented question answering treat document order as
 incidental, while SOPs invert this assumption. This is a
-methods-and-pilot paper with two contributions and one worked example.
-The first contribution is to pair step-count fidelity with Kendall's
-$\tau$ as companion metrics for chunking procedural text, on the
-observation that $\tau$ is computed only over aligned gold steps and
-is therefore blind to spurious extra steps, while a count-fidelity
-metric is not. The second is direct empirical evidence that
-LLM-as-oracle chunker rankings are unstable. On a 26-document public
-US-government pilot (OSHA, NRC, EPA, CDC/NIOSH; a public-domain proxy
+methods-and-pilot paper with two contributions and one worked
+example. The first contribution is to pair step-count fidelity with
+Kendall's $\tau$ as a diagnostic companion metric for chunking
+procedural text, on the observation that $\tau$ is computed only over
+aligned gold steps and is by construction blind to spurious extra
+steps, while a count-fidelity metric is not. The second is direct
+empirical evidence that LLM-as-oracle chunker rankings are unstable.
+On a 26-document public US-government pilot (a public-domain proxy
 for the motivating industrial-SOP domain), replacing the per-chunk
 extractor and the whole-document oracle with OpenAI gpt-4o-mini in
 place of Gemini~Flash changes the step-count-fidelity rank order of
 five chunkers on the 15 documents for which both oracles return
 non-empty graphs, and the precondition signal swings from universal
-presence under Gemini~Flash (26 of 26 documents) to universal absence
-under gpt-4o-mini (0 of 15). A natural concern is that gpt-4o-mini
-might be a degenerate second judge rather than a peer to Gemini Flash;
-a thoroughness-matched re-run of the oracle with gpt-4o under the
-identical prompt refutes that hypothesis empirically by producing an
-\emph{even more} conservative oracle (22 of 26 documents return empty
-step graphs and only 1 of 26 has any precondition under gpt-4o,
-compared with 11 of 26 and 9 of 26 under gpt-4o-mini). The OpenAI
-family is consistently more conservative than the Gemini family under
-the same prompt regardless of OpenAI model size, so the cross-extractor
-instability is a property of how the two model families respond to
-the oracle prompt, not of a single under-calibrated checkpoint. The evaluation oracle is itself an LLM,
-no human-annotated reference is included, and the pilot is
-underpowered: a retrospective paired-test power analysis indicates
-that detecting the closest pairwise effect against the semantic
-baseline at $\alpha=0.05$ and power 0.8 would require approximately
-$n=156$ documents. Under this regime, the absolute fidelity numbers
-reported in the body of the paper are not interpretable in level, and
-even the rank moves between extractors. A transparent rule-based
-position-aware chunker (PAC) is presented as a worked structure-
-preserving baseline that exists to make the metric demonstrable; it is
-not an empirical winner. The corpus manifest, both extractor runs, the
-matched-prompt multiplicity-isolation data, the pipeline, and the
+presence (26 of 26) to universal absence (0 of 15). A
+thoroughness-matched re-run of the oracle with gpt-4o under the
+identical prompt refutes the obvious objection that gpt-4o-mini might
+be a degenerate second judge: gpt-4o is \emph{even more} conservative
+than gpt-4o-mini, so the conservatism scales with OpenAI model
+capability and is a family-prompt interaction, not a calibration
+failure of one checkpoint. The pilot is under-powered (paired
+minimum-detectable-effect at $n=26$, $\alpha=0.05$, power $0.8$ is
+$d_z\approx0.55$, a medium-to-large effect), the evaluation oracle is
+itself an LLM with no human reference, and the absolute fidelity
+numbers reported in the body are not interpretable in level. A
+transparent rule-based position-aware chunker (PAC) is presented as a
+worked structure-preserving baseline that exists to make the metric
+demonstrable; it is not an empirical winner, and the three
+structural-fidelity properties motivating its design are each shown
+not to be validatable on PAC at this corpus scale (Discussion). The
+corpus manifest, three oracle runs (Gemini Flash, gpt-4o-mini,
+gpt-4o), the multiplicity-isolation data, the pipeline, and the
 reference PAC implementation are released so that a hand-annotated
 gold subset and a prompt-symmetric re-evaluation can be conducted on
 the same documents.}
@@ -569,17 +565,27 @@ $1-|\hat{n}-n^{*}|/\max(\hat{n},n^{*})$, where $n^{*}$ and $\hat{n}$ are
 the gold and predicted step counts. The metric ranges over $[0,1]$ and
 is \emph{symmetric} on under- and over-segmentation: a chunker that
 declares half the gold steps and a chunker that declares twice the
-gold steps both score $0.5$. This symmetry is what step-count fidelity
-adds over step precision (below). Step precision penalises only
-over-generation: a chunker that under-segments but whose declared
-steps all align to gold steps scores $1.0$ on step precision while
-having missed real content; step-count fidelity flags this as a count
-mismatch. The two metrics are therefore not redundant. Under
-LLM-as-oracle evaluation as in this pilot, the level of step-count
-fidelity is partly determined by chunk count rather than by structural
-correctness (Section~\ref{sec:results}, ``Robustness checks''), but
-its qualitative diagnostic value as the symmetric companion to step
-precision and to $\tau$ survives that caveat.
+gold steps both score $0.5$. The symmetry is deliberate: at
+evaluation time the two failure modes are intentionally weighted
+equally so that a single number does not silently bake in a domain
+preference. For a safety-critical SOP-automation deployment the two
+failures are obviously \emph{not} symmetric in cost (a dropped real
+step can be operationally catastrophic while a spurious duplicate is
+usually noise that downstream merge or human review absorbs); the
+right instrument for that deployment is a recall-weighted or
+asymmetric-loss variant rather than count fidelity as defined here.
+Evaluation-time symmetry and deployment-time asymmetry are different
+needs, and step-count fidelity targets the first. Step precision
+(below) penalises only over-generation; a chunker that under-segments
+but whose declared steps all align to gold scores $1.0$ on step
+precision while having missed real content, which step-count fidelity
+flags as a count mismatch. The two metrics are therefore not
+redundant. Under LLM-as-oracle evaluation as in this pilot, the level
+of step-count fidelity is partly determined by chunk count rather
+than by structural correctness (Section~\ref{sec:results},
+``Robustness checks''); the metric's surviving role in this setting
+is qualitative direction (under- vs over-counting), not the absolute
+level.
 
 \textbf{Step-order accuracy:} Kendall's $\tau$ between the gold step
 order and the order of the aligned predicted steps, with unaligned
@@ -869,22 +875,24 @@ pairwise comparison is directionally in PAC's favour without any
 reaching $0.05$. The pilot is therefore not powered to support any
 PAC superiority claim.
 
-A retrospective power calculation makes this concrete. The observed
-Cohen's $d_z$ for PAC vs.\ each baseline on step-count fidelity on
-the full 26-document corpus is 0.34 against fixed-size, 0.42 against
-recursive, 0.22 against semantic, and 0.28 against layout-aware. For
-a paired two-sided test at $\alpha=0.05$ and power 0.8, the corpus
-sizes required to detect those observed effects are approximately
-$n=70$, $n=46$, $n=156$, and $n=104$ respectively. The closest
-competitor is semantic chunking ($d_z=0.22$); detecting that effect
-at conventional significance levels would require approximately
-$n\approx156$ documents on a paired protocol, six times the present
-pilot. The uncorrected $p=0.046$ against recursive and $p=0.040$
-against fixed-size should therefore be read as the modest signals of
-an under-powered pilot, not as near-significant findings; the
+A minimum-detectable-effect calculation makes this concrete and
+avoids the circularity of computing power from observed effect sizes.
+For a paired two-sided test at $\alpha=0.05$ and power 0.8 with
+$n=26$ documents, the smallest standardized effect the pilot can
+detect is Cohen's $d_z\approx0.55$ (from
+$d_z=(z_{\alpha/2}+z_{\beta})/\sqrt{n}=2.80/\sqrt{26}$); $d_z=0.55$
+is conventionally a medium-to-large paired effect. Detecting a
+small-to-medium effect ($d_z=0.30$, comparable to magnitudes the
+pilot would plausibly want to flag between competing chunkers) at the
+same $\alpha$ and power would require $n\approx88$. The pilot is
+therefore under-powered for anything except large pairwise
+differences, and the uncorrected $p=0.046$ against recursive and
+$p=0.040$ against fixed-size should be read as the modest signals of
+that under-powering rather than as near-significant findings. The
 empirical contribution of the paper carries on the framework and on
-the instability result of Section~\ref{sec:robustness}, not on the
-pairwise Gemini comparisons.
+the cross-extractor instability result of
+Section~\ref{sec:robustness}, not on the pairwise Gemini
+comparisons.
 
 \begin{table}[ht]
 \centering
@@ -1144,10 +1152,11 @@ instability. D.\ is the chunked-versus-thorough-oracle ratio on the
 same 8 small documents used for B and C, restated here for
 comparison.}
 \label{tab:ratios}
-\small
-\begin{tabular}{clllll}
+\footnotesize
+\setlength{\tabcolsep}{4pt}
+\begin{tabular}{c c p{2.95cm} p{2.95cm} p{3.3cm} p{2.3cm}}
 \toprule
-& Name & Numerator & Denominator & Document set & Prompts (num/denom) \\
+& Name & Numerator & Denominator & Document set & Prompts (num/den) \\
 \midrule
 A & 4--9$\times$  & Chunked $\hat{n}$ (merged, generic chunkers)
                   & Oracle $n^{*}$ (thorough)
@@ -1449,15 +1458,25 @@ sacrificing step-ordering accuracy: its $\tau$ is statistically
 indistinguishable from the baselines' on both slices.
 
 The result reframes how chunkers should be evaluated for procedural
-text. Surface ordering metrics reward over-segmentation. A chunker that
-declares every paragraph a step produces a long, noisy step list whose
-few correctly ordered real steps yield a healthy $\tau$ even when the
-overall output is unusable for automation. A $\tau$-only evaluation
-would rank such a chunker highly. Pairing an order metric with a
-count-fidelity metric exposes the pathology and rewards chunkers that
-respect the document's own step granularity. We argue that for
-procedural-text evaluation, step-count fidelity belongs alongside
-$\tau$ as a primary metric rather than as an afterthought.
+text. Surface ordering metrics reward over-segmentation. A chunker
+that declares every paragraph a step produces a long, noisy step list
+whose few correctly ordered real steps yield a healthy $\tau$ even
+when the overall output is unusable for automation. A $\tau$-only
+evaluation would rank such a chunker highly. Pairing an order metric
+with a count-fidelity metric exposes the pathology and surfaces
+chunkers that respect the document's own step granularity. The
+appropriate status of step-count fidelity, given the present pilot's
+evidence, is as a \emph{diagnostic companion} to $\tau$ rather than
+as a primary metric: both terms of the metric are LLM-oracle
+unstable in level (the numerator $\hat{n}$ is multiplicity-inflated
+9$\times$ to 16$\times$ under matched prompts, and the denominator
+$n^{*}$ swings 6$\times$ with oracle prompt phrasing,
+Section~\ref{sec:robustness}, Table~\ref{tab:ratios}), so the only
+property the pilot supports for step-count fidelity is its qualitative
+direction (whether $\hat{n}$ is materially larger or smaller than the
+declared reference). Promotion to a primary metric requires a
+prompt-symmetric stabilised $n^{*}$, ideally hand-annotated, which is
+not delivered here.
 
 The finding sits in the broader pattern that the optimal chunker is
 task-dependent. Where retrieval-augmented question answering rewards
@@ -1489,6 +1508,37 @@ change. The reference PAC implementation released with this paper is
 approximately 400 lines of Python and is small enough to audit and
 adapt; it is offered as a starting point for further work rather than
 a finished production component.
+
+Two structural observations about the relationship between the
+methodology and the empirical evidence are worth stating directly
+before the per-limitation list, because a reader could otherwise
+assemble them only from pieces. \emph{First, the metric-pairing
+argument is a priori, not empirically validated by this pilot.}
+Kendall's $\tau$ is defined on aligned step pairs and is therefore
+blind to spurious steps by construction; that step-count fidelity
+fills a gap $\tau$ leaves is a logical observation that needs no
+corpus. The pilot was supposed to make that observation
+demonstrable in the SOP setting, but the chunker selected to do so
+(PAC) is mechanically aligned with the headline metric (few large
+chunks $\approx$ whole-document oracle input), so the experiment does
+not add independent support to the metric: it shows the metric
+firing on a chunker that is built to make it fire. The argument for
+the metric carries on its logic; the pilot illustrates but does not
+validate it. \emph{Second, the three structural-fidelity properties
+formalised in Section~\ref{sec:methods-properties} are not validated
+on PAC by this pilot.} On P1 (step order) PAC is not measurably
+better than the baselines on $\tau$ on either Gemini slice. On P2
+(precondition adjacency) precondition recall is shown to be
+extractor-dependent (Section~\ref{sec:robustness}, ``Cross-extractor
+rerun''), so its trustworthiness as evidence is retracted. On P3
+(safety-constraint attachment) constraint-attachment F1 is
+uninformative across all chunkers (0.012--0.039, no separation;
+dominated by extractor self-inconsistency). Of the three properties
+that motivate PAC's design, the pilot validates the chunker on none.
+This does not undermine the framework's a priori logic, but it does
+mean that PAC is presented in this paper as a worked
+structure-preserving baseline whose claimed structural advantages
+remain to be tested under a hand-annotated reference.
 
 Six limitations bound these claims and are described explicitly here
 so the reader can scope what has been shown and what has not.
@@ -1532,16 +1582,16 @@ passes, or pre-register an idempotent prompt under which a
 whole-document pass and a single-chunk pass on a document that fits in
 one chunk return identical graphs.
 
-Third, the corpus is a 26-document pilot of public US-government SOPs.
-Even uncorrected, only two of 48 paired tests reach $p<0.05$, and
-neither would survive a strict family-wise correction at
-$\alpha=0.05$. A retrospective power calculation
-(Section~\ref{sec:stats-power}) shows that the closest baseline
-comparison (PAC versus semantic chunking) would require
-approximately $n\approx156$ documents to detect the observed effect
-size at conventional power; the present pilot is six-fold
-under-powered for that comparison. No PAC superiority claim is made:
-the empirical contribution of the paper is the framework and the
+Third, the corpus is a 26-document pilot of public US-government
+procedural documents. Even uncorrected, only two of 48 paired tests
+reach $p<0.05$, and neither would survive a strict family-wise
+correction at $\alpha=0.05$. A minimum-detectable-effect calculation
+(Section~\ref{sec:stats-power}) shows that the smallest paired
+effect this pilot can detect at $\alpha=0.05$ and power $0.8$ with
+$n=26$ is Cohen's $d_z\approx0.55$, a conventionally medium-to-large
+effect. The pilot is therefore under-powered for anything except
+large pairwise differences. No PAC superiority claim is made: the
+empirical contribution of the paper is the framework and the
 LLM-as-oracle instability result, not pairwise wins on the
 illustrative row table.
 
@@ -1662,8 +1712,8 @@ structure-preserving baseline. PAC exists in this paper so that the
 companion metric has something to make demonstrable: a transparent
 rule-based chunker whose few-large-chunks regime is mechanically
 adjacent to a whole-document pass. PAC is not an empirical winner.
-The pilot is six-fold under-powered for the closest pairwise
-comparison (Section~\ref{sec:stats-power}); the count-fidelity metric
+The pilot can only detect medium-to-large pairwise effects at
+$n=26$ (Section~\ref{sec:stats-power}); the count-fidelity metric
 on which the illustrative row table shows the highest PAC mean is
 partly circular with PAC's design; the measured advantage is
 concentrated in a single stratum whose enumeration conventions
