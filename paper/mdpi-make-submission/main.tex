@@ -53,20 +53,27 @@ Kendall's $\tau$ as a diagnostic companion metric for chunking
 procedural text, on the observation that $\tau$ is computed only over
 aligned gold steps and is by construction blind to spurious extra
 steps, while a count-fidelity metric is not. The second is direct
-empirical evidence that LLM-as-oracle chunker rankings are unstable.
-On a 26-document public US-government pilot (a public-domain proxy
-for the motivating industrial-SOP domain), replacing the per-chunk
-extractor and the whole-document oracle with OpenAI gpt-4o-mini in
-place of Gemini~Flash changes the step-count-fidelity rank order of
-five chunkers on the 15 documents for which both oracles return
-non-empty graphs, and the precondition signal swings from universal
-presence (26 of 26) to universal absence (0 of 15). A
-thoroughness-matched re-run of the oracle with gpt-4o under the
-identical prompt refutes the obvious objection that gpt-4o-mini might
-be a degenerate second judge: gpt-4o is \emph{even more} conservative
-than gpt-4o-mini, so the conservatism scales with OpenAI model
-capability and is a family-prompt interaction, not a calibration
-failure of one checkpoint. The pilot is under-powered (paired
+empirical evidence that LLM-as-oracle chunker evaluation is not
+prompt-portable across model families. On a 26-document public
+US-government pilot (a public-domain proxy for the motivating
+industrial-SOP domain), under a whole-document oracle prompt that
+returns non-empty step graphs on 26 of 26 documents under Gemini~Flash
+the same prompt returns empty graphs on 11 of 26 under OpenAI
+gpt-4o-mini and on 22 of 26 under the larger gpt-4o, with mean steps
+per document collapsing from 14.8 (Gemini) to 6.7 (gpt-4o-mini) to
+2.4 (gpt-4o) and the precondition signal collapsing from 26/26 to
+9/26 to 1/26. Because conservatism scales \emph{with} OpenAI model
+capability, the OpenAI behaviour is not a degenerate-judge calibration
+issue at a single checkpoint; it is a property of how the two model
+families respond to the identical oracle prompt. The broader
+implication is that chunkers cannot be reliably ranked under any
+single-LLM silver-standard oracle without human anchoring. As a
+secondary observation within this scope, the rank order of five
+chunkers on step-count fidelity also changes between Gemini~Flash
+and gpt-4o-mini on the 15 documents where both produce a non-empty
+oracle graph (paired non-parametric bootstrap, $n=15$, 2{,}000
+resamples: rank-1 chunker differs across extractors in 93\% of
+resamples). The pilot is under-powered (paired
 minimum-detectable-effect at $n=26$, $\alpha=0.05$, power $0.8$ is
 $d_z\approx0.55$, a medium-to-large effect), the evaluation oracle is
 itself an LLM with no human reference, and the absolute fidelity
@@ -547,15 +554,25 @@ metrics operate on aligned graph nodes rather than on token positions
 in the source text. Second, the alignment uses semantic
 (paraphrase-tolerant) cosine matching rather than verbatim
 substring identity, because the per-chunk extractor introduces
-paraphrase. Adapting $P_k$ or WindowDiff to this regime would require
-re-deriving their probabilistic semantics for graph-node alignment
-under paraphrase, which we have not done; step-count fidelity is the
-simpler instrument that nonetheless captures the count-discrepancy
-axis those metrics were designed to expose. We position it as
-deliberately narrower than $P_k$ or WindowDiff: it does not localise
-where the misalignment falls in the document, only how the predicted
-step list under- or over-counts relative to the reference, on the
-aligned-node graph that downstream workflow extraction consumes.
+paraphrase. Adapting $P_k$ or WindowDiff to this regime is non-trivial in a
+specific way: both metrics are defined over a partition of $T$ token
+positions and ask, for a window of width $k$, whether the number of
+within-window segment boundaries in the hypothesis matches the
+reference. In the present setting there is no shared token-position
+axis between hypothesis and reference, because the per-chunk extractor
+paraphrases ``step~7'' into a sentence whose token positions in the
+original document text are not the same as the oracle's step-7 token
+positions, and the step set is matched by cosine similarity on
+sentence embeddings rather than by boundary location. A faithful
+adaptation would need to define a window over the aligned-node
+sequence rather than over the source-text token sequence and re-derive
+the metric's expected behaviour under chance, which we have not done.
+Step-count fidelity is the simpler instrument that nonetheless
+captures the count-discrepancy axis those metrics were designed to
+expose, at the cost of not localising where the misalignment falls.
+We position it as deliberately narrower than $P_k$ or WindowDiff and
+note the gap explicitly so that subsequent work can decide whether to
+do the adaptation or to use count fidelity as-is.
 
 For each (document, chunker) cell six structural metrics are
 computed. Because gold and predicted graphs use independent ids,
@@ -1262,48 +1279,104 @@ threshold, metrics) constant. The rerun was 2{,}290 API calls (a
 small variation from the Gemini run's 2{,}292 reflects two cells where
 the OpenAI extractor produced one fewer chunk-graph call before the
 sampling cap was hit; the seed and sampling logic are identical) and
-completed in approximately
-two hours of wall clock. Table~\ref{tab:robust} reports per-chunker
-means on the 15 documents where both oracles produced a non-empty
-graph (the apples-to-apples paired comparison); the OpenAI side of the
-table is also released as Supplementary Table~S3.
+completed in approximately two hours of wall clock.
 
-Two findings from this rerun bear directly on the validity of the
-headline result and are reported here in full. First, the gpt-4o-mini
-oracle returned an empty whole-document graph on 11 of 26 documents
-(six of which are the non-procedural documents excluded from the
-procedural-only subset; the remaining five are procedural documents on
-which Gemini Flash did return non-empty oracles). The two model
-families exhibit substantively different conservatism in the
-whole-document pass, which is itself evidence that the silver-standard
-oracle depends on the model used to produce it. Second, on the 15
-documents where both oracles returned a non-empty graph, the
-step-count-fidelity rank order of the five chunkers differs between
-extractors. Under Gemini Flash the ranking is PAC $>$ semantic $>$
-layout-aware $>$ recursive $>$ fixed-size; under gpt-4o-mini it is
-semantic $>$ fixed-size $>$ PAC $>$ layout-aware $>$ recursive.
-PAC drops from first to third, and semantic chunking takes the lead.
-On Kendall's~$\tau$ the ranking also shifts: PAC moves from last
-under Gemini Flash to second under gpt-4o-mini, while fixed-size leads
-under both extractors. The precondition-recall comparison is
-not defined under gpt-4o-mini, because the OpenAI oracle returned
-zero preconditions on all 15 documents. Following the convention
-stated in Methods, the metric is reported as undefined on this slice
-rather than coerced to $1$ by the $0/0$ default, so the cross-extractor
-table does not include a precondition-recall column.
+The most robust empirical finding from this exercise is the
+\emph{family-prompt non-portability} reported in
+Table~\ref{tab:oracle-by-family} and discussed in the next paragraph:
+under an identical oracle prompt designed for the Gemini-Flash
+oracle, the OpenAI family produces oracle graphs that are
+near-unusable. This finding holds regardless of any chunker
+comparison and undercuts the assumption that a single-LLM
+silver-standard oracle is portable across model families. The
+rank-order changes on the 15 documents where both extractors did
+return non-empty oracle graphs (Table~\ref{tab:robust}) are reported
+secondarily; they document a paired property of the two oracles on
+that slice, but their interpretation is bounded by the family-prompt
+non-portability above, because the OpenAI side of that comparison
+is itself a strongly-conservative judge under the present prompt.
+
+\emph{Family-prompt non-portability under an identical oracle
+prompt.} Under the same whole-document oracle prompt that produces
+non-empty graphs on every one of the 26 documents under Gemini Flash,
+gpt-4o-mini returns an empty graph on 11 of 26 documents and a
+non-empty graph with zero preconditions on every one of the
+remaining 15; gpt-4o (the larger, more capable OpenAI model) is
+\emph{more} conservative still, returning an empty graph on 22 of
+26 documents and at least one precondition on only 1 of 26 documents
+overall (Table~\ref{tab:oracle-by-family}). Because the conservatism
+scales \emph{with} model capability inside the OpenAI family
+(stronger model, sparser oracle), it cannot be attributed to one
+under-calibrated checkpoint; it is a property of how the OpenAI
+family responds to the present oracle prompt versus how the Gemini
+family does. This in turn means that any LLM-as-oracle protocol for
+chunker evaluation in this regime is not prompt-portable across model
+families without per-family prompt re-engineering, and the assumption
+that a Gemini-prompted oracle and an OpenAI-prompted oracle are
+interchangeable silver standards is empirically false on this corpus.
+The result is robust independent of any downstream rank comparison:
+when 42\% to 85\% of documents return empty oracle graphs, the
+oracle is not a usable silver standard regardless of whether the
+chunkers it rates fall in one rank order or another.
+
+\emph{Rank-order changes on the 15-document paired slice.}
+Table~\ref{tab:robust} reports per-chunker means on the 15 documents
+where both oracles returned a non-empty graph (the apples-to-apples
+paired comparison); the OpenAI side of the table is also released
+as Supplementary Table~S3. On step-count fidelity, the rank order
+of the five chunkers differs between extractors (Gemini Flash:
+PAC $>$ semantic $>$ layout-aware $>$ recursive $>$ fixed-size;
+gpt-4o-mini: semantic $>$ fixed-size $>$ PAC $>$ layout-aware $>$
+recursive). On Kendall's $\tau$ the ranking also shifts. The
+precondition-recall comparison is not defined under gpt-4o-mini
+because that oracle returned zero preconditions on all 15
+documents; following the Methods convention the column is reported
+as undefined rather than coerced to $1$ by the $0/0$ default. This
+rank-order result is reported secondarily because its interpretation
+inherits the family-prompt non-portability caveat above: the OpenAI
+ranker on this slice is the same oracle that fails on 42\% of the
+26-document pilot. The bootstrap quantification below characterises
+how stable the rank order is across document resamples on the
+15-document slice, conditional on accepting the OpenAI ranker on
+those 15 documents as informative; it does not address the
+family-prompt non-portability concern, which is what
+Table~\ref{tab:oracle-by-family} establishes.
 
 \begin{table}[ht]
 \centering
-\caption{Cross-extractor robustness on the 15 documents with non-empty
-oracle under both extractors. Means are paired at the document level;
-\emph{count} is step-count fidelity, $\tau$ is Kendall's $\tau$.
-The PAC count-fidelity lead under Gemini Flash does not replicate
-under gpt-4o-mini, and the rank order of chunkers changes. Best per
-extractor in \textbf{bold}. The intended use of the table is a
-rank-order comparison between the two extractors on the same documents;
-because the cross-extractor non-replication is established by rank
-change rather than by a paired significance test, no Wilcoxon $p$
-values are reported in this table.}
+\caption{Oracle-pass output on the same 26 documents under the same
+oracle prompt, varying only the LLM family in the oracle role. The
+empty-graph and zero-precondition behaviour reported for OpenAI is
+not a degenerate-judge calibration issue at the gpt-4o-mini level:
+gpt-4o (the larger, more capable model in the same family) is more
+conservative on both axes under the same prompt. The conservatism is
+therefore a property of how the two families respond to the present
+oracle prompt, and the assumption that a single oracle prompt is
+portable across model families is empirically false on this corpus.}
+\label{tab:oracle-by-family}
+\begin{tabular}{lrrrr}
+\toprule
+Oracle model & Mean steps/doc & Empty graphs & Mean preconditions/doc & Docs with $\geq 1$ precondition \\
+\midrule
+Gemini Flash  & 14.8 & 0 / 26  & 3.65 & 26 / 26 \\
+gpt-4o-mini   & 6.7  & 11 / 26 & 0.73 & 9 / 26 \\
+gpt-4o        & 2.4  & 22 / 26 & 0.04 & 1 / 26 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{table}[ht]
+\centering
+\caption{Rank-order on the 15 documents with non-empty oracle under
+both Gemini Flash and gpt-4o-mini, reported as a secondary observation
+within the family-prompt non-portability scope established by
+Table~\ref{tab:oracle-by-family}. Means are paired at the document
+level; \emph{count} is step-count fidelity, $\tau$ is Kendall's
+$\tau$. Best per extractor in \textbf{bold}; the bold is visual
+orientation only, the cross-extractor non-replication is established
+by rank change (and the bootstrap quantification in the text), not
+by a paired significance test. The OpenAI side of this table inherits
+the strong-conservatism caveat of Table~\ref{tab:oracle-by-family}.}
 \label{tab:robust}
 \begin{tabular}{lcccc}
 \toprule
@@ -1321,80 +1394,35 @@ layout-aware & 0.381 & 0.206 & 0.271 & 0.283 \\
 \end{tabular}
 \end{table}
 
-To quantify how robust the rank flip is to document resampling at this
-small slice size, a paired non-parametric bootstrap (2{,}000 resamples
-over the 15 shared documents) was run on the per-document
-step-count-fidelity values reported in Table~\ref{tab:robust}. Under
-Gemini Flash, PAC's bootstrap-mean step-count fidelity is 0.517 with a
-95\% CI of $[0.39, 0.65]$, semantic 0.432~$[0.33, 0.54]$, and
-layout-aware 0.383~$[0.27, 0.51]$; PAC is the rank-1 chunker in 93\%
-of resamples and semantic is rank-2 in 81\%. Under gpt-4o-mini on the
-\emph{same} 15 documents PAC drops to 0.277~$[0.17, 0.40]$ and is
-rank-1 in only 9\% of resamples (mode rank: 5, in 36\% of resamples),
-while semantic is rank-1 in 50\% and fixed-size is rank-2 in 29\%.
-The rank-1 chunker differs between the two extractors in 93\% of
-paired bootstrap resamples (1{,}858 of 2{,}000). The cross-extractor
-rank flip is therefore not a noise artefact of the small slice; it
-is a real, paired property of the two LLM judges on this corpus,
-albeit one whose interpretation is bounded by the family-failure
-concern reported below.
+To quantify how robust the rank order is to document resampling at
+this small slice size, a paired non-parametric bootstrap (2{,}000
+resamples over the 15 shared documents) was run on the per-document
+step-count-fidelity values in Table~\ref{tab:robust}. Under Gemini
+Flash PAC's bootstrap-mean step-count fidelity is 0.517 with a 95\%
+CI of $[0.39, 0.65]$, semantic 0.432~$[0.33, 0.54]$, and layout-aware
+0.383~$[0.27, 0.51]$; PAC is the rank-1 chunker in 93\% of resamples
+and semantic is rank-2 in 81\%. Under gpt-4o-mini on the \emph{same}
+15 documents PAC drops to 0.277~$[0.17, 0.40]$ and is rank-1 in only
+9\% of resamples (mode rank: 5, in 36\% of resamples), while semantic
+is rank-1 in 50\% and fixed-size is rank-2 in 29\%. The rank-1
+chunker differs between the two extractors in 93\% of paired
+bootstrap resamples (1{,}858 of 2{,}000). Conditional on accepting
+the OpenAI ranker on the 15 documents where it returned a non-empty
+oracle, the cross-extractor rank flip is not a noise artefact of the
+small slice; conditional on the family-prompt non-portability of
+Table~\ref{tab:oracle-by-family}, the rank flip is downstream of an
+oracle that does not function reliably across families to begin with.
 
-The non-replication is not interpreted as a refutation of PAC's
-design. A natural objection to this cross-extractor evidence is that
-gpt-4o-mini may simply be too conservative an oracle under the present
-prompt: its empty-graph rate (42\%) and zero-precondition behaviour
-(0/15) read more like under-performance than like genuine inter-judge
-disagreement, and a calibrated cross-extractor test would require a
-second oracle of comparable thoroughness to Gemini Flash's. To probe
-this, the oracle pass was repeated on the same 26 documents with the
-same oracle prompt but with gpt-4o (the larger, more capable OpenAI
-model in the same family as gpt-4o-mini) in the oracle role. The
-result is the opposite of the calibration that the objection would
-predict (Table~\ref{tab:oracle-by-family}): gpt-4o is \emph{more}
-conservative than gpt-4o-mini under the same prompt, returning empty
-step graphs on 22 of 26 documents (versus 11 of 26 under gpt-4o-mini)
-and identifying at least one precondition on only 1 of 26 documents
-(versus 9 of 26 under gpt-4o-mini), with a mean of 2.4 declared steps
-per document (versus 6.7 under gpt-4o-mini and 14.8 under Gemini
-Flash). Because the OpenAI conservatism scales \emph{with} model
-capability inside the OpenAI family, it cannot be attributed to
-gpt-4o-mini being a degenerate second judge: a stronger second judge
-in the same family is more degenerate by the same measures. The
-honest reading is that the conservatism is a property of how the
-OpenAI family responds to the present oracle prompt versus how the
-Gemini family does, and that ``a calibrated cross-extractor test''
-under the same prompt across vendors is not available to this work.
-What can be supported on this evidence is the narrower claim that
-LLM-as-oracle chunker rankings are not robust to choice of oracle
-model family, which is the load-bearing same-model coupling named as
-the deepest pilot-level limitation (Discussion): the chunker ranking
-is partly a function of which model is used to evaluate the chunks,
-and a hand-annotated gold subset is the only protocol that breaks the
-coupling cleanly. The cross-extractor result is reported in full
-because it provides the practitioner with an honest scope on the
-Gemini-based pilot result.
-
-\begin{table}[ht]
-\centering
-\caption{Oracle-pass output on the same 26 documents under the same
-oracle prompt, varying only the LLM family in the oracle role. The
-empty-graph and zero-precondition behaviour reported elsewhere for
-gpt-4o-mini does not reflect a degenerate-judge calibration issue:
-gpt-4o (the larger, more capable model in the same family) is more
-conservative on both axes under the same prompt. The conservatism is
-therefore a property of the family-prompt interaction, not of the
-specific gpt-4o-mini checkpoint.}
-\label{tab:oracle-by-family}
-\begin{tabular}{lrrrr}
-\toprule
-Oracle model & Mean steps/doc & Empty graphs & Mean preconditions/doc & Docs with $\geq 1$ precondition \\
-\midrule
-Gemini Flash  & 14.8 & 0 / 26  & 3.65 & 26 / 26 \\
-gpt-4o-mini   & 6.7  & 11 / 26 & 0.73 & 9 / 26 \\
-gpt-4o        & 2.4  & 22 / 26 & 0.04 & 1 / 26 \\
-\bottomrule
-\end{tabular}
-\end{table}
+The honest synthesis of the cross-extractor evidence is that LLM-as-oracle
+chunker evaluation in this regime is not prompt-portable across
+model families, and that ``a calibrated cross-extractor test under
+a single shared oracle prompt across vendors'' is not available to
+this work. What can be supported on this evidence is the broader
+methodological claim that chunkers cannot be reliably ranked under
+any single-LLM silver-standard oracle without human anchoring; the
+narrower claim that one specific Gemini-vs-gpt-4o-mini rank order
+flips on the 15-document slice is reported as a secondary
+observation within that scope.
 
 \vspace{4pt}
 \noindent\textbf{Idempotency check: the oracle's reference count is
@@ -1786,15 +1814,21 @@ over-segmentation pathology: $\tau$ is computed only over aligned gold
 steps and is blind to spurious extra steps, so a chunker that fragments
 the source into a long noisy step list can produce a healthy $\tau$ on
 output that is unusable. A count-fidelity metric makes the
-fragmentation visible. Second, the cross-extractor robustness check
-demonstrates empirically that chunker rankings under LLM-based
-evaluation are partly extractor-dependent: the step-count-fidelity
-rank order of five chunkers changes between Gemini~Flash and OpenAI
-gpt-4o-mini on the 15 documents where both oracles return non-empty
-graphs, which is direct evidence that same-model coupling between the
-per-chunk extractor and the whole-document oracle is a load-bearing
-confound for any LLM-judged chunker evaluation of this kind. These
-two findings hold regardless of which chunker is best.
+fragmentation visible. Second, an oracle-by-family comparison under an identical
+whole-document oracle prompt shows that the prompt is not portable
+across LLM families: Gemini~Flash returns non-empty step graphs on
+26 of 26 documents, gpt-4o-mini on 15 of 26 (and 0/15 preconditions),
+and the larger gpt-4o on only 4 of 26 (and 1/26 preconditions). The
+collapse scales with OpenAI model capability, so it is not a
+checkpoint calibration issue; it is a family-prompt interaction
+that makes the single-LLM silver-standard oracle a brittle
+foundation for chunker evaluation regardless of which chunker is
+rated best on the subset where the oracle does return a non-empty
+graph. The synthesis is that chunkers cannot be reliably ranked
+under any single-LLM silver-standard oracle in this regime without
+human anchoring. The 15-document rank-flip between Gemini and
+gpt-4o-mini (rank-1 chunker differs in 93\% of paired bootstrap
+resamples) is a corollary of this scope, not its centre.
 
 The position-aware chunker (PAC) is offered as a worked
 structure-preserving baseline. PAC exists in this paper so that the
