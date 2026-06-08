@@ -1319,6 +1319,23 @@ when 42\% to 85\% of documents return empty oracle graphs, the
 oracle is not a usable silver standard regardless of whether the
 chunkers it rates fall in one rank order or another.
 
+A natural and important objection to this finding is that the
+``empty graphs'' from the OpenAI family might not be substantive
+empty judgments at all but instruction-following failures---refusals,
+truncations, or malformed non-JSON output that the parser converts
+into an empty record. Inspection of the released oracle outputs
+refutes this: every empty record under both gpt-4o-mini and gpt-4o
+is a well-formed JSON object conforming to the requested schema
+(\texttt{\{"steps":[],"preconditions":[],"constraints":[],"edges":[]\}}),
+each is produced with the same 23 output tokens, none carries an
+error flag in the released metadata, and none truncates or refuses.
+The OpenAI family is therefore making the substantive judgement
+``this document contains no extractable steps, preconditions,
+constraints, or edges,'' formatted exactly as the prompt requires.
+The collapse is a substantive sparsity choice, not a format-compliance
+failure, which strengthens rather than weakens the
+non-portability claim above.
+
 \emph{Rank-order changes on the 15-document paired slice.}
 Table~\ref{tab:robust} reports per-chunker means on the 15 documents
 where both oracles returned a non-empty graph (the apples-to-apples
@@ -1470,11 +1487,11 @@ Figure~\ref{fig:overseg}.
 
 Two cautions attach to this control and should be read in view by the
 reader. First, the conservative whole-document prompt returns zero
-steps on five of the eight documents, which is why the mean
-($2.25$) is anchored by the three documents on which the conservative
-prompt actually fired (mean 9.67 on those three; the conservative
-prompt was originally rejected as the oracle precisely because of
-this empty-graph mode). The 6.3$\times$ figure should therefore be
+steps on six of the eight documents (11 and 7 steps on the two it did
+fire on; mean $9.0$ over those two, $0$ over the other six, $2.25$
+over all eight; see Supplementary Table~S4 for per-document values).
+The conservative prompt was originally rejected as the oracle
+precisely because of this empty-graph mode. The 6.3$\times$ figure should therefore be
 read as a comparison between a working oracle prompt and a
 known-to-be-degenerate single-shot, not as a measurement of clean
 prompt sensitivity. Second, multiplicity per se does not establish
